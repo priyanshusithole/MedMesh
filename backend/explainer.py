@@ -36,6 +36,8 @@ TEACHING NOTE — What is an "environment variable"?
 """
 
 import os
+import sys
+import asyncio
 import logging
 from typing import Optional
 from dotenv import load_dotenv
@@ -78,9 +80,9 @@ def _initialize_gemini():
 
         genai.configure(api_key=api_key)
 
-        # gemini-3.8-flash: Latest high-speed multimodal model
+        # gemini-3.5-flash: High-speed multimodal model with active quota
         _gemini_model = genai.GenerativeModel(
-            model_name="gemini-3.8-flash",
+            model_name="gemini-3.5-flash",
             generation_config={
                 "temperature": 0.4,    # Lower = more consistent, less creative
                                        # 0.0 = deterministic, 1.0 = very creative
@@ -305,11 +307,16 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
         return []
 
     try:
+        import io
+        from PIL import Image
         import google.generativeai as genai
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=api_key, transport="rest")
 
-        # For vision tasks, we use the multimodal gemini-3.8-flash model
-        vision_model = genai.GenerativeModel("gemini-3.8-flash")
+        try:
+            pil_image = Image.open(io.BytesIO(image_bytes))
+        except Exception as img_err:
+            logger.warning(f"PIL Image conversion error: {img_err}")
+            pil_image = None
 
         prompt = """You are analyzing a medical prescription or medicine packaging photo.
 
@@ -317,7 +324,7 @@ Extract ALL medicine names, drug names, or medication names you can see.
 
 Instructions:
 - Include brand names AND generic names if visible
-- Include dosage if written next to the name (e.g., "Aspirin 75mg")
+- Include dosage if written next to the name (e.g., "Aspirin 75mg", "PAN 40", "ZERODOL P")
 - Ignore doctor names, patient names, dates, clinic names, and instructions
 - If you see "1-0-1" type schedules, ignore them
 - Return ONLY the medicine names, one per line
@@ -325,28 +332,37 @@ Instructions:
 
 Do not add explanations. Just list the medicine names, one per line."""
 
-        # Create the image part for the multimodal request
-        image_part = {
-            "mime_type": mime_type,
-            "data": image_bytes
-        }
+        # Multi-model fallback chain to bypass free-tier daily quota exhaustion
+        candidate_models = ["gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
 
-        response = await vision_model.generate_content_async([prompt, image_part])
-        result_text = response.text.strip()
+        for model_name in candidate_models:
+            try:
+                vision_model = genai.GenerativeModel(model_name)
+                content_input = [prompt, pil_image] if pil_image is not None else [prompt, {"mime_type": mime_type, "data": image_bytes}]
 
-        if result_text == "NONE" or not result_text:
-            return []
+                # Run in executor thread to prevent blocking the async loop
+                response = await asyncio.to_thread(vision_model.generate_content, content_input)
+                result_text = (response.text or "").strip()
 
-        # Split by newlines, clean up each line
-        medicines = []
-        for line in result_text.split("\n"):
-            line = line.strip().lstrip("•-*123456789. ").strip()
-            if line and len(line) > 1:  # Filter out single characters
-                medicines.append(line)
+                if result_text == "NONE" or not result_text:
+                    continue
 
-        logger.info(f"Image OCR extracted {len(medicines)} medicine names: {medicines}")
-        return medicines
+                medicines = []
+                for line in result_text.split("\n"):
+                    clean_line = line.strip().lstrip("•-*123456789. ").strip()
+                    if clean_line and len(clean_line) > 1 and not clean_line.lower().startswith("here are"):
+                        medicines.append(clean_line)
+
+                if medicines:
+                    logger.info(f"Image OCR ({model_name}) extracted {len(medicines)} medicine names: {medicines}")
+                    return medicines
+            except Exception as model_err:
+                logger.warning(f"Vision OCR model {model_name} failed: {model_err}")
+                continue
+
+        logger.warning("All vision models failed to extract medicines.")
+        return []
 
     except Exception as e:
-        logger.error(f"Image OCR failed: {e}")
+        logger.error(f"Image OCR pipeline failed: {e}")
         return []
