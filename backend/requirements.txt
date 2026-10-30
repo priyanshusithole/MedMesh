@@ -1,0 +1,48 @@
+# ============================================================
+# MedGuard Backend — Python Dependencies
+# ============================================================
+# Install all of these with: pip install -r requirements.txt
+# ============================================================
+
+# --- Web Framework ---
+# FastAPI: Our web framework. It handles incoming HTTP requests
+# and routes them to the correct Python functions.
+fastapi==0.115.5
+
+# uvicorn: The "ASGI server" that actually runs FastAPI.
+# Think of FastAPI as the engine blueprint and uvicorn as
+# the physical engine that runs it. [standard] adds
+# extras like websocket support and faster JSON handling.
+uvicorn[standard]==0.32.0
+
+# --- HTTP Client ---
+# httpx: A modern HTTP client for Python. We use this to
+# call the NIH RxNav API (to look up drug names).
+# Why httpx over requests? httpx supports async (non-blocking)
+# calls, which is critical for a fast API.
+httpx==0.27.2
+
+# --- Data Validation ---
+# pydantic: Validates the shape of data automatically.
+# When someone sends JSON to our API, Pydantic checks it
+# has all required fields with correct types — like a
+# bouncer checking IDs at a club door.
+pydantic==2.9.2
+
+# --- File Upload Support ---
+# python-multipart: Required to accept file uploads (images).
+# When a user uploads a prescription photo, FastAPI needs
+# this library to parse the multipart form data.
+python-multipart==0.0.12
+
+# --- Google Gemini AI ---
+# google-generativeai: Official Python SDK for Google's
+# Gemini models. We use Gemini for two things:
+#   1. Plain-English explanations of drug interactions
+#   2. OCR / vision: Extract medicine names from photos
+google-generativeai==0.8.3
+
+# --- Image Processing (for OCR fallback) ---
+# Pillow: Python Imaging Library. Lets us open, resize,
+# and convert image files before sending them to Gemini Vision.
+Pillow==10.4.0

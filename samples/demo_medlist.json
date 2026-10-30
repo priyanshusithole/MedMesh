@@ -1,0 +1,67 @@
+{
+  "_description": "MedGuard demo medication lists for presentations and testing.",
+  "_usage": "These are pre-built scenarios for the demo. Load them via the 'Load Demo' buttons in the UI.",
+
+  "grandma_triple_threat": {
+    "_scenario": "The main demo scenario — guaranteed to trigger: 1 duplicate, 1 severe interaction, 1 Beers warning",
+    "label": "Grandma's Triple Threat 🚨",
+    "patient_age": 72,
+    "medicines": [
+      "Warfarin 5mg",
+      "Brufen 400",
+      "Advil 200mg",
+      "Lisinopril 10mg",
+      "Potassium 20mEq",
+      "Diazepam 5mg"
+    ],
+    "expected_findings": {
+      "duplicate": "Brufen 400 + Advil 200mg → both contain ibuprofen",
+      "interaction_high_1": "Warfarin + ibuprofen → bleeding risk",
+      "interaction_high_2": "Lisinopril + Potassium → hyperkalemia risk",
+      "beers": "Diazepam (benzodiazepine) → fall/confusion risk for patient aged 72"
+    }
+  },
+
+  "serotonin_trap": {
+    "_scenario": "Two doctors, two prescriptions — neither knew about the other",
+    "label": "Serotonin Syndrome Trap ⚠️",
+    "patient_age": 68,
+    "medicines": [
+      "Sertraline 50mg",
+      "Tramadol 50mg",
+      "Ibuprofen 400mg"
+    ],
+    "expected_findings": {
+      "interaction_high": "Sertraline + Tramadol → serotonin syndrome risk",
+      "interaction_moderate": "Sertraline (SSRI) + Ibuprofen → GI bleeding risk"
+    }
+  },
+
+  "statin_antibiotic": {
+    "_scenario": "Short-term antibiotic prescription interacts with long-term statin",
+    "label": "Statin-Antibiotic Danger 💊",
+    "patient_age": 60,
+    "medicines": [
+      "Simvastatin 40mg",
+      "Clarithromycin 500mg",
+      "Omeprazole 20mg"
+    ],
+    "expected_findings": {
+      "interaction_high": "Simvastatin + Clarithromycin → rhabdomyolysis (muscle breakdown) risk"
+    }
+  },
+
+  "all_clear_baseline": {
+    "_scenario": "Safe combination — for demonstration of 'all clear' output",
+    "label": "All Clear Baseline ✅",
+    "patient_age": 45,
+    "medicines": [
+      "Omeprazole 20mg",
+      "Cetirizine 10mg",
+      "Paracetamol 500mg"
+    ],
+    "expected_findings": {
+      "result": "No known interactions, no duplicates — should show all green"
+    }
+  }
+}

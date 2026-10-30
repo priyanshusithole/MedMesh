@@ -1,0 +1,130 @@
+{
+  "_meta": {
+    "description": "MedGuard Beers Criteria subset for elderly patients (age >= 65).",
+    "source": "American Geriatrics Society 2023 Beers Criteria® for Potentially Inappropriate Medication Use in Older Adults",
+    "note": "All drug names are lowercase active ingredients, matching the output of rxnorm.py normalization. This is a curated educational subset, not the full criteria.",
+    "version": "1.0.0"
+  },
+  "elderly_warnings": [
+    {
+      "ingredient": "diazepam",
+      "drug_class": "Benzodiazepine (sedative)",
+      "severity": "high",
+      "title": "Beers Alert: Diazepam — High Fall & Confusion Risk for Elderly",
+      "detail": "Benzodiazepines like diazepam cause excessive sedation and slow reaction times in older adults, significantly increasing the risk of falls, fractures, and motor vehicle accidents. Older adults also metabolize diazepam much more slowly, causing it to accumulate to higher-than-expected levels.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "lorazepam",
+      "drug_class": "Benzodiazepine (sedative)",
+      "severity": "high",
+      "title": "Beers Alert: Lorazepam — High Fall & Confusion Risk for Elderly",
+      "detail": "Like diazepam, lorazepam (Ativan) is on the Beers list for causing oversedation, cognitive impairment, delirium, and dangerous falls in patients over 65. Cognitive decline from benzodiazepines can be mistaken for dementia.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "alprazolam",
+      "drug_class": "Benzodiazepine (sedative)",
+      "severity": "high",
+      "title": "Beers Alert: Alprazolam — High Fall & Confusion Risk for Elderly",
+      "detail": "Alprazolam (Xanax) is a benzodiazepine with significant risk of causing falls, hip fractures, cognitive impairment, and driving impairment in elderly patients. Older adults are twice as sensitive to its sedating effects.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "diphenhydramine",
+      "drug_class": "First-generation antihistamine / Sleep aid",
+      "severity": "moderate",
+      "title": "Beers Alert: Diphenhydramine — Delirium & Confusion Risk for Elderly",
+      "detail": "Diphenhydramine (found in Benadryl, Unisom, ZzzQuil, Tylenol PM) is strongly anticholinergic. In older adults, it commonly causes acute confusion, urinary retention, constipation, and cognitive decline. It is one of the most commonly used yet most dangerous OTC drugs for the elderly.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "promethazine",
+      "drug_class": "First-generation antihistamine / Antiemetic",
+      "severity": "moderate",
+      "title": "Beers Alert: Promethazine — High Anticholinergic Risk for Elderly",
+      "detail": "Promethazine has strong anticholinergic and sedating properties, making it particularly risky for older adults. It can cause delirium, excessive sedation, urinary retention, and dangerous respiratory depression at higher doses.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "ibuprofen",
+      "drug_class": "NSAID (Non-steroidal anti-inflammatory)",
+      "severity": "moderate",
+      "title": "Beers Alert: Ibuprofen — GI Bleeding & Kidney Risk for Elderly",
+      "detail": "NSAIDs like ibuprofen are particularly dangerous for patients over 65. They increase the risk of peptic ulcers, GI bleeding (risk increases 3–5 fold), acute kidney injury, and fluid retention (which worsens heart failure and hypertension). If an NSAID is truly necessary, it should be used at the lowest dose for the shortest time, with a stomach-protecting drug (PPI).",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "naproxen",
+      "drug_class": "NSAID (Non-steroidal anti-inflammatory)",
+      "severity": "moderate",
+      "title": "Beers Alert: Naproxen — GI Bleeding & Kidney Risk for Elderly",
+      "detail": "Naproxen (Aleve) carries the same elevated risks as other NSAIDs in older adults: gastrointestinal bleeding, kidney impairment, and cardiovascular effects. Despite being labeled as 'gentle on the stomach,' it is NOT safe for regular use in patients over 65.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "amitriptyline",
+      "drug_class": "Tricyclic antidepressant (TCA)",
+      "severity": "high",
+      "title": "Beers Alert: Amitriptyline — Dangerous Anticholinergic Drug for Elderly",
+      "detail": "Amitriptyline has very strong anticholinergic properties (dry mouth, constipation, urinary retention, blurred vision, cognitive impairment). In elderly patients, it causes high rates of delirium, falls, and orthostatic hypotension (dangerous blood pressure drop on standing up).",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "doxepin",
+      "drug_class": "Tricyclic antidepressant (TCA)",
+      "severity": "high",
+      "title": "Beers Alert: Doxepin — Dangerous Anticholinergic Drug for Elderly",
+      "detail": "Doxepin, especially at doses above 6mg, is strongly anticholinergic and sedating. The Beers Criteria recommends avoiding it in older adults due to high risk of confusion, urinary retention, falls, and arrhythmia.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "nifedipine",
+      "drug_class": "Calcium channel blocker (short-acting)",
+      "severity": "high",
+      "title": "Beers Alert: Short-Acting Nifedipine — Cardiovascular Risk for Elderly",
+      "detail": "Short-acting nifedipine causes a rapid drop in blood pressure and reflex rapid heart rate, increasing the risk of cardiovascular events in older adults. It can trigger sudden drops in blood pressure leading to fainting and falls.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "digoxin",
+      "drug_class": "Cardiac glycoside",
+      "severity": "moderate",
+      "title": "Beers Alert: Digoxin — Narrow Safety Window — Extra Caution for Elderly",
+      "detail": "Digoxin is eliminated by the kidneys, which naturally decline in function with age. Elderly patients frequently reach toxic digoxin levels even on standard doses. Toxicity causes nausea, visual disturbances (yellow-green halos), and dangerous arrhythmias. Regular blood level monitoring is essential.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "glibenclamide",
+      "drug_class": "Sulfonylurea (diabetes)",
+      "severity": "high",
+      "title": "Beers Alert: Glibenclamide — Severe Hypoglycemia Risk for Elderly",
+      "detail": "Glibenclamide (glyburide) is a long-acting sulfonylurea that stimulates insulin release regardless of blood sugar levels. In elderly patients with reduced kidney function and irregular food intake, it causes prolonged and severe low blood sugar (hypoglycemia), which can be life-threatening.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "chlorphenamine",
+      "drug_class": "First-generation antihistamine",
+      "severity": "moderate",
+      "title": "Beers Alert: Chlorphenamine — Anticholinergic Risk for Elderly",
+      "detail": "Chlorphenamine (found in many OTC cold and allergy medications) is a first-generation antihistamine with strong anticholinergic effects. In older adults, it causes sedation, confusion, delirium, urinary retention, and falls. Newer, non-sedating antihistamines (loratadine, cetirizine) are preferred.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "codeine",
+      "drug_class": "Opioid analgesic",
+      "severity": "moderate",
+      "title": "Beers Alert: Codeine — High Fall & Constipation Risk for Elderly",
+      "detail": "Codeine and other opioids cause disproportionate sedation and constipation in elderly patients. They also increase fall risk due to dizziness and cognitive impairment. If pain management requires an opioid, geriatric guidelines recommend starting at the lowest possible dose.",
+      "source": "AGS Beers Criteria 2023"
+    },
+    {
+      "ingredient": "zolpidem",
+      "drug_class": "Non-benzodiazepine sleep aid (Z-drug)",
+      "severity": "high",
+      "title": "Beers Alert: Zolpidem — Dangerous Sleep Drug for Elderly",
+      "detail": "Zolpidem (Ambien) causes significant daytime cognitive impairment, increased fall risk, motor incoordination, and complex sleep behaviors (sleepwalking, sleep-driving) in older adults. The FDA lowered the recommended dose for elderly patients. The Beers Criteria recommends avoiding it entirely in patients over 65.",
+      "source": "AGS Beers Criteria 2023 / FDA Safety Communication"
+    }
+  ]
+}

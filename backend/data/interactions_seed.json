@@ -1,0 +1,250 @@
+{
+  "_meta": {
+    "description": "MedGuard curated drug-drug interaction seed dataset.",
+    "sources": ["FDA drug labels", "DDInter database", "Beers Criteria 2023", "UpToDate clinical references"],
+    "note": "Each entry uses lowercase active ingredient names (post-normalization). Keys are sorted alphabetically for consistent lookup.",
+    "version": "1.0.0"
+  },
+  "interactions": [
+    {
+      "drug_a": "warfarin",
+      "drug_b": "ibuprofen",
+      "severity": "high",
+      "title": "Major Bleeding Risk: Warfarin + Ibuprofen",
+      "detail": "Ibuprofen (an NSAID) inhibits platelet aggregation and damages the stomach lining. Combined with warfarin (a blood thinner), this dramatically increases the risk of serious gastrointestinal bleeding and stroke.",
+      "source": "FDA Black Box Warning / DDInter"
+    },
+    {
+      "drug_a": "warfarin",
+      "drug_b": "aspirin",
+      "severity": "high",
+      "title": "Major Bleeding Risk: Warfarin + Aspirin",
+      "detail": "Aspirin inhibits platelets and can cause stomach ulcers. When combined with warfarin, the risk of internal bleeding — especially in the stomach and brain — increases significantly. This combination should only be used under strict medical supervision.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "warfarin",
+      "drug_b": "naproxen",
+      "severity": "high",
+      "title": "Major Bleeding Risk: Warfarin + Naproxen",
+      "detail": "Naproxen is an NSAID similar to ibuprofen. It inhibits platelet function and irritates the stomach lining, greatly amplifying the anticoagulant effect of warfarin and raising the risk of life-threatening bleeding.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "lisinopril",
+      "drug_b": "potassium",
+      "severity": "high",
+      "title": "Dangerous Potassium Buildup: Lisinopril + Potassium Supplements",
+      "detail": "Lisinopril is an ACE inhibitor that causes the kidneys to retain potassium. Taking additional potassium supplements can push blood potassium levels dangerously high (hyperkalemia), which can cause life-threatening heart rhythm problems and cardiac arrest.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "lisinopril",
+      "drug_b": "spironolactone",
+      "severity": "high",
+      "title": "Severe Hyperkalemia Risk: Lisinopril + Spironolactone",
+      "detail": "Both lisinopril (ACE inhibitor) and spironolactone (potassium-sparing diuretic) reduce potassium excretion through different mechanisms. Together, they cause dangerous potassium accumulation in the blood, risking fatal cardiac arrhythmia.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "metformin",
+      "drug_b": "contrast dye",
+      "severity": "high",
+      "title": "Kidney Failure Risk: Metformin + Iodinated Contrast",
+      "detail": "Iodinated contrast dye (used in CT scans and angiography) can temporarily impair kidney function. In patients taking metformin, this can cause lactic acidosis — a dangerous buildup of lactic acid in the blood that can be fatal.",
+      "source": "FDA Label / Radiological Society of North America"
+    },
+    {
+      "drug_a": "simvastatin",
+      "drug_b": "clarithromycin",
+      "severity": "high",
+      "title": "Severe Muscle Damage: Simvastatin + Clarithromycin",
+      "detail": "Clarithromycin (an antibiotic) blocks the liver enzyme (CYP3A4) that breaks down simvastatin. This causes simvastatin levels in the blood to spike dramatically, leading to rhabdomyolysis — a severe breakdown of muscle tissue that can cause kidney failure.",
+      "source": "FDA Black Box Warning"
+    },
+    {
+      "drug_a": "simvastatin",
+      "drug_b": "erythromycin",
+      "severity": "high",
+      "title": "Severe Muscle Damage Risk: Simvastatin + Erythromycin",
+      "detail": "Like clarithromycin, erythromycin inhibits the CYP3A4 enzyme that metabolizes simvastatin. This leads to dangerous accumulation of simvastatin and serious risk of muscle breakdown (rhabdomyolysis).",
+      "source": "FDA Label"
+    },
+    {
+      "drug_a": "sertraline",
+      "drug_b": "ibuprofen",
+      "severity": "moderate",
+      "title": "Increased Bleeding Risk: Sertraline (SSRI) + Ibuprofen",
+      "detail": "SSRIs like sertraline reduce platelet serotonin stores, impairing clotting. When combined with NSAIDs like ibuprofen, the risk of gastrointestinal bleeding increases by 3–15 times compared to taking either drug alone.",
+      "source": "DDInter / Clinical Pharmacology"
+    },
+    {
+      "drug_a": "fluoxetine",
+      "drug_b": "ibuprofen",
+      "severity": "moderate",
+      "title": "Increased Bleeding Risk: Fluoxetine (SSRI) + Ibuprofen",
+      "detail": "Fluoxetine is an SSRI antidepressant. Like all SSRIs, it depletes platelet serotonin and reduces clotting ability. Combined with ibuprofen's anti-platelet effect, this significantly raises gastrointestinal bleeding risk.",
+      "source": "DDInter"
+    },
+    {
+      "drug_a": "sertraline",
+      "drug_b": "tramadol",
+      "severity": "high",
+      "title": "Life-Threatening Serotonin Syndrome: Sertraline + Tramadol",
+      "detail": "Tramadol increases serotonin levels in the brain. Combined with sertraline (an SSRI), this can trigger serotonin syndrome — a dangerous condition causing agitation, rapid heart rate, high blood pressure, and in severe cases, seizures and death.",
+      "source": "FDA Drug Safety Communication"
+    },
+    {
+      "drug_a": "fluoxetine",
+      "drug_b": "tramadol",
+      "severity": "high",
+      "title": "Life-Threatening Serotonin Syndrome: Fluoxetine + Tramadol",
+      "detail": "Fluoxetine strongly inhibits the metabolism of tramadol AND increases serotonin. This double effect makes the combination extremely dangerous, with a very high risk of serotonin syndrome.",
+      "source": "FDA Drug Safety Communication"
+    },
+    {
+      "drug_a": "metoprolol",
+      "drug_b": "verapamil",
+      "severity": "high",
+      "title": "Dangerous Heart Block: Metoprolol + Verapamil",
+      "detail": "Metoprolol (a beta-blocker) and verapamil (a calcium channel blocker) both slow the heart rate and reduce heart muscle contraction through different mechanisms. Together, they can cause dangerously slow heart rates, heart block, and potentially cardiac arrest.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "atorvastatin",
+      "drug_b": "clarithromycin",
+      "severity": "moderate",
+      "title": "Elevated Statin Levels: Atorvastatin + Clarithromycin",
+      "detail": "Clarithromycin inhibits the CYP3A4 enzyme that processes atorvastatin in the liver. This raises atorvastatin blood levels and increases the risk of myopathy (muscle pain and weakness) and rhabdomyolysis.",
+      "source": "FDA Label"
+    },
+    {
+      "drug_a": "digoxin",
+      "drug_b": "amiodarone",
+      "severity": "high",
+      "title": "Digoxin Toxicity: Digoxin + Amiodarone",
+      "detail": "Amiodarone significantly raises digoxin blood levels by competing for the same elimination pathway. Digoxin has a very narrow therapeutic window — even a small increase can cause toxicity: nausea, vision changes, and life-threatening arrhythmias.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "clopidogrel",
+      "drug_b": "omeprazole",
+      "severity": "moderate",
+      "title": "Reduced Blood Thinner Effect: Clopidogrel + Omeprazole",
+      "detail": "Omeprazole (a proton pump inhibitor) blocks CYP2C19, the liver enzyme that activates clopidogrel (a blood thinner used to prevent clots). This can reduce clopidogrel's effectiveness by up to 40%, increasing the risk of heart attack or stroke in at-risk patients.",
+      "source": "FDA Drug Safety Communication"
+    },
+    {
+      "drug_a": "warfarin",
+      "drug_b": "fluconazole",
+      "severity": "high",
+      "title": "Dangerous Anticoagulation: Warfarin + Fluconazole",
+      "detail": "Fluconazole (an antifungal) powerfully inhibits the CYP2C9 enzyme that breaks down warfarin. This causes warfarin blood levels to rise sharply, dramatically increasing the risk of severe, potentially fatal bleeding.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "ciprofloxacin",
+      "drug_b": "warfarin",
+      "severity": "high",
+      "title": "Increased Bleeding Risk: Ciprofloxacin + Warfarin",
+      "detail": "Ciprofloxacin (a fluoroquinolone antibiotic) inhibits warfarin metabolism and can disrupt gut bacteria that produce Vitamin K, both of which amplify warfarin's anticoagulant effect. INR can rise dangerously within days of starting ciprofloxacin.",
+      "source": "FDA Label"
+    },
+    {
+      "drug_a": "amlodipine",
+      "drug_b": "simvastatin",
+      "severity": "moderate",
+      "title": "Elevated Statin Levels: Amlodipine + Simvastatin",
+      "detail": "Amlodipine (a calcium channel blocker) weakly inhibits the CYP3A4 pathway that metabolizes simvastatin. This can raise simvastatin blood concentrations and modestly increase the risk of myopathy. FDA recommends limiting simvastatin to 20mg/day with amlodipine.",
+      "source": "FDA Drug Safety Communication"
+    },
+    {
+      "drug_a": "lithium",
+      "drug_b": "ibuprofen",
+      "severity": "high",
+      "title": "Lithium Toxicity: Lithium + Ibuprofen",
+      "detail": "NSAIDs like ibuprofen reduce kidney blood flow, causing the kidneys to retain lithium instead of excreting it. Lithium has an extremely narrow therapeutic window — even a modest rise in blood levels can cause tremors, confusion, seizures, and kidney damage.",
+      "source": "FDA Label / DDInter"
+    },
+    {
+      "drug_a": "lithium",
+      "drug_b": "naproxen",
+      "severity": "high",
+      "title": "Lithium Toxicity: Lithium + Naproxen",
+      "detail": "Like ibuprofen, naproxen (an NSAID) impairs kidney lithium excretion, causing dangerous lithium accumulation. This combination requires immediate medical review.",
+      "source": "FDA Label"
+    },
+    {
+      "drug_a": "methotrexate",
+      "drug_b": "ibuprofen",
+      "severity": "high",
+      "title": "Methotrexate Toxicity: Methotrexate + Ibuprofen",
+      "detail": "NSAIDs like ibuprofen compete with methotrexate for kidney excretion, causing methotrexate to accumulate to toxic levels. This can cause severe bone marrow suppression, liver damage, and dangerous mouth sores.",
+      "source": "FDA Black Box Warning"
+    },
+    {
+      "drug_a": "phenytoin",
+      "drug_b": "warfarin",
+      "severity": "moderate",
+      "title": "Complex Interaction: Phenytoin + Warfarin",
+      "detail": "Phenytoin (anti-epileptic) and warfarin interact in both directions: phenytoin initially raises warfarin levels (bleeding risk), then over weeks it induces liver enzymes that lower warfarin levels (clot risk). This unpredictable interaction requires very close INR monitoring.",
+      "source": "DDInter / Clinical Pharmacology"
+    },
+    {
+      "drug_a": "allopurinol",
+      "drug_b": "warfarin",
+      "severity": "moderate",
+      "title": "Increased Anticoagulation: Allopurinol + Warfarin",
+      "detail": "Allopurinol (used for gout) inhibits the breakdown of warfarin, causing warfarin blood levels and anticoagulant effect to increase. Patients may need a warfarin dose reduction and more frequent INR checks.",
+      "source": "DDInter"
+    },
+    {
+      "drug_a": "diltiazem",
+      "drug_b": "simvastatin",
+      "severity": "moderate",
+      "title": "Elevated Statin Levels: Diltiazem + Simvastatin",
+      "detail": "Diltiazem (calcium channel blocker) inhibits CYP3A4, raising simvastatin blood levels and increasing myopathy risk. The FDA recommends limiting simvastatin to 10mg/day when combined with diltiazem.",
+      "source": "FDA Drug Safety Communication"
+    },
+    {
+      "drug_a": "furosemide",
+      "drug_b": "gentamicin",
+      "severity": "high",
+      "title": "Severe Hearing/Kidney Damage: Furosemide + Gentamicin",
+      "detail": "Both furosemide (a loop diuretic) and gentamicin (an aminoglycoside antibiotic) are individually toxic to the inner ear (ototoxic) and kidneys (nephrotoxic). Combined, the risk of permanent hearing loss and kidney failure is greatly amplified.",
+      "source": "FDA Label"
+    },
+    {
+      "drug_a": "diazepam",
+      "drug_b": "oxycodone",
+      "severity": "high",
+      "title": "Fatal Respiratory Depression: Diazepam + Oxycodone",
+      "detail": "Both diazepam (a benzodiazepine) and oxycodone (an opioid) suppress the central nervous system and slow breathing. Together, they dramatically increase the risk of respiratory depression, unconsciousness, and fatal overdose.",
+      "source": "FDA Black Box Warning"
+    },
+    {
+      "drug_a": "tramadol",
+      "drug_b": "diazepam",
+      "severity": "high",
+      "title": "CNS/Respiratory Depression: Tramadol + Diazepam",
+      "detail": "Combining tramadol (opioid-like analgesic) with diazepam (benzodiazepine sedative) creates additive central nervous system depression. This combination significantly increases the risk of sedation, slowed breathing, and overdose death.",
+      "source": "FDA Black Box Warning"
+    },
+    {
+      "drug_a": "sildenafil",
+      "drug_b": "isosorbide mononitrate",
+      "severity": "high",
+      "title": "Severe Blood Pressure Drop: Sildenafil + Nitrates",
+      "detail": "Both sildenafil (for erectile dysfunction or pulmonary hypertension) and nitrates like isosorbide mononitrate cause blood vessel dilation. Together, they cause a catastrophic drop in blood pressure that can lead to fainting, heart attack, and death. This combination is absolutely contraindicated.",
+      "source": "FDA Black Box Warning"
+    },
+    {
+      "drug_a": "codeine",
+      "drug_b": "diazepam",
+      "severity": "high",
+      "title": "Respiratory Depression: Codeine + Diazepam",
+      "detail": "Codeine (an opioid pain reliever) and diazepam (a benzodiazepine) both depress the central nervous system. Their combined effect on breathing is greater than the sum of their individual effects, creating serious risk of respiratory arrest.",
+      "source": "FDA Black Box Warning"
+    }
+  ]
+}
