@@ -51,7 +51,7 @@ if str(_THIS_DIR.parent) not in sys.path:
 # Load environment variables from .env file
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
@@ -552,14 +552,14 @@ async def check_image(
 
 @app.api_route("/api/{full_path:path}", methods=["GET", "POST", "OPTIONS"])
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "OPTIONS"])
-async def debug_catchall(request, full_path: str = ""):
-    logger.warning(f"UNMATCHED ROUTE: method={request.method}, path={request.scope.get('path')}, full_path={full_path}")
+async def debug_catchall(request: Request, full_path: str = ""):
     return {
         "status": "unmatched_route",
         "method": request.method,
         "scope_path": request.scope.get("path"),
         "full_path": full_path,
-        "headers": {k: v for k, v in request.headers.items() if "auth" not in k.lower()}
+        "x_matched_path": request.headers.get("x-matched-path"),
+        "raw_path": str(request.url)
     }
 
 if __name__ == "__main__":
