@@ -54,57 +54,74 @@ logger = logging.getLogger(__name__)
 # If the API key is missing, _gemini_model stays None and we fall back
 # to templates automatically — no crash, no ugly error message.
 
-_gemini_model = None  # Will be set to a Gemini model instance if key exists
+# Multi-model fallback pool: if one model's quota is reached, automatically failover to the next
+_MODEL_POOL = [
+    "gemini-3.5-flash",
+    "gemini-3.7-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-3.8-flash"
+]
+_ACTIVE_MODEL_INDEX = 0
+
+async def generate_with_fallback(contents, temperature: float = 0.3, max_tokens: int = 300) -> Optional[str]:
+    """
+    Executes a Gemini generation call with automatic seamless model switching.
+    If a model hits a 429 quota exhaustion or rate limit, it switches to the next
+    available model in the pool and updates the active model pointer.
+    """
+    global _ACTIVE_MODEL_INDEX
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key, transport="rest")
+    except ImportError:
+        logger.error("google-generativeai package not installed.")
+        return None
+
+    total_models = len(_MODEL_POOL)
+    for offset in range(total_models):
+        idx = (_ACTIVE_MODEL_INDEX + offset) % total_models
+        model_name = _MODEL_POOL[idx]
+        try:
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                generation_config={
+                    "temperature": temperature,
+                    "max_output_tokens": max_tokens,
+                    "top_p": 0.8,
+                },
+                safety_settings={
+                    "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+                    "HARM_CATEGORY_HARASSMENT": "BLOCK_MEDIUM_AND_ABOVE",
+                    "HARM_CATEGORY_HATE_SPEECH": "BLOCK_MEDIUM_AND_ABOVE",
+                    "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_MEDIUM_AND_ABOVE",
+                }
+            )
+            response = await asyncio.to_thread(model.generate_content, contents)
+            text = (response.text or "").strip()
+            if text:
+                if idx != _ACTIVE_MODEL_INDEX:
+                    logger.info(f"Switched active Gemini model from {_MODEL_POOL[_ACTIVE_MODEL_INDEX]} -> {model_name}")
+                    _ACTIVE_MODEL_INDEX = idx
+                return text
+        except Exception as err:
+            logger.warning(f"Gemini model '{model_name}' encountered: {err}. Switching to next available model...")
+            continue
+
+    logger.warning("All Gemini models in fallback pool exhausted.")
+    return None
 
 def _initialize_gemini():
-    """
-    Try to set up the Gemini client. Called once at startup.
-
-    TEACHING NOTE — Why a separate initialization function?
-    We wrap setup in a function so any error during init is caught cleanly.
-    If we did this at module level without try/except, an import error
-    would crash the ENTIRE backend server, not just the AI feature.
-    """
-    global _gemini_model  # We're modifying the module-level variable
-
+    """Verify Gemini API key is present."""
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         logger.warning(
             "GEMINI_API_KEY not set — AI explanations will use template fallback. "
             "Set the environment variable to enable Gemini-powered explanations."
         )
-        return
-
-    try:
-        import google.generativeai as genai
-
-        genai.configure(api_key=api_key)
-
-        # gemini-3.5-flash: High-speed multimodal model with active quota
-        _gemini_model = genai.GenerativeModel(
-            model_name="gemini-3.5-flash",
-            generation_config={
-                "temperature": 0.4,    # Lower = more consistent, less creative
-                                       # 0.0 = deterministic, 1.0 = very creative
-                                       # 0.4 is good for medical writing (factual but warm)
-                "max_output_tokens": 200,  # Keep explanations short and focused
-                "top_p": 0.8,
-            },
-            # Safety settings — we're discussing medical topics, so we need to
-            # allow some content that might trigger overly cautious filters
-            safety_settings={
-                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
-                "HARM_CATEGORY_HARASSMENT": "BLOCK_MEDIUM_AND_ABOVE",
-                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_MEDIUM_AND_ABOVE",
-                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_MEDIUM_AND_ABOVE",
-            }
-        )
-        logger.info("Gemini model initialized successfully (gemini-1.5-flash)")
-
-    except ImportError:
-        logger.error("google-generativeai package not installed. Run: pip install google-generativeai")
-    except Exception as e:
-        logger.error(f"Failed to initialize Gemini: {e}")
 
 
 # Run initialization when module is imported
@@ -175,28 +192,9 @@ Rules you MUST follow:
 
 async def explain_finding(finding: dict) -> str:
     """
-    Generate a plain-English explanation for a single finding.
-
-    If Gemini is available, uses AI. Otherwise falls back to templates.
-    This function is ASYNC because the Gemini API call involves network I/O.
-
-    Args:
-        finding: a finding dict from interactions.py run_safety_engine()
-    Returns:
-        a plain-English explanation string
+    Generate a plain-English explanation for a single finding with automatic multi-model failover.
     """
-    global _gemini_model
-    if _gemini_model is None:
-        _initialize_gemini()
-
-    if _gemini_model is None:
-        # Gemini not available — use template (always works)
-        return _template_explanation(finding)
-
-    try:
-        # Build a clear prompt giving Gemini the FACTS (from our data)
-        # and asking it only to REPHRASE them for a caregiver audience
-        user_prompt = f"""
+    user_prompt = f"""
 Please rewrite this medical safety alert in plain English for a family caregiver:
 
 Finding Type: {finding.get('type', 'unknown')}
@@ -209,20 +207,9 @@ Source: {finding.get('source', '')}
 
 Write 2-3 warm, clear sentences for a non-medical caregiver. End with a specific action to take.
 """
-
-        # TEACHING NOTE — generate_content_async vs generate_content:
-        # generate_content_async is the async version — it doesn't block
-        # the server while waiting for Gemini to respond.
-        response = await _gemini_model.generate_content_async(user_prompt)
-        plain_text = response.text.strip()
-
-        if plain_text:
-            return plain_text
-
-    except Exception as e:
-        logger.warning(f"Gemini explanation failed: {e} — using template fallback")
-
-    # If Gemini call failed for any reason, fall through to template
+    explanation = await generate_with_fallback(user_prompt, temperature=0.4, max_tokens=200)
+    if explanation:
+        return explanation
     return _template_explanation(finding)
 
 
@@ -272,36 +259,10 @@ async def explain_all_findings(findings: list[dict]) -> list[dict]:
 async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> list[str]:
     """
     Use Gemini Vision to extract medicine names from a prescription photo.
-
-    HOW GEMINI VISION WORKS:
-    Gemini is a "multimodal" model — it can understand both text AND images.
-    We send the raw image bytes along with a text prompt asking it to
-    extract medicine names. It returns a comma-separated list.
-
-    WHY GEMINI AND NOT TESSERACT?
-    Tesseract is traditional OCR — it only recognizes printed text.
-    Doctor handwriting is notoriously difficult and Tesseract fails badly.
-    Gemini Vision understands CONTEXT — it knows a prescription's structure
-    and can identify medicine names even in messy handwriting.
-
-    HUMAN-IN-THE-LOOP GUARDRAIL:
-    We return the list of CANDIDATES, not a final answer.
-    The frontend shows these as editable chips for the user to confirm.
-    This solves the "misread handwriting" problem — humans catch AI errors.
-
-    Args:
-        image_bytes: raw bytes of the uploaded image file
-        mime_type: MIME type of the image (e.g., "image/jpeg", "image/png")
-    Returns:
-        list of detected medicine name strings (to be confirmed by user)
+    Automatically identifies and excludes crossed-out or struck-through medicines.
+    Uses multi-model fallback to ensure high availability.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        global _gemini_model
-        if _gemini_model is None:
-            _initialize_gemini()
-        api_key = os.environ.get("GEMINI_API_KEY")
-
     if not api_key:
         logger.warning("GEMINI_API_KEY not configured — cannot perform image OCR")
         return []
@@ -309,8 +270,6 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
     try:
         import io
         from PIL import Image
-        import google.generativeai as genai
-        genai.configure(api_key=api_key, transport="rest")
 
         try:
             pil_image = Image.open(io.BytesIO(image_bytes))
@@ -318,50 +277,32 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
             logger.warning(f"PIL Image conversion error: {img_err}")
             pil_image = None
 
-        prompt = """You are analyzing a medical prescription or medicine packaging photo.
+        prompt = """You are a medical OCR assistant.
+Extract all active medicine names from this doctor prescription.
+Do not extract any medicine that has a pen cut line, slash, or strike-through across it (e.g. cancelled/discontinued medicines).
+List only valid medicines, one per line. Do not include dosage forms like Tab, Tab., Cap, or Cap.
+If none are found, return NONE."""
 
-Extract ALL medicine names, drug names, or medication names you can see.
+        content_input = [prompt, pil_image] if pil_image is not None else [prompt, {"mime_type": mime_type, "data": image_bytes}]
+        raw_text = await generate_with_fallback(content_input, temperature=0.2, max_tokens=400)
 
-Instructions:
-- Include brand names AND generic names if visible
-- Include dosage if written next to the name (e.g., "Aspirin 75mg", "PAN 40", "ZERODOL P")
-- Ignore doctor names, patient names, dates, clinic names, and instructions
-- If you see "1-0-1" type schedules, ignore them
-- Return ONLY the medicine names, one per line
-- If you cannot identify any medicines, return exactly: NONE
+        if not raw_text or raw_text.strip() == "NONE":
+            return []
 
-Do not add explanations. Just list the medicine names, one per line."""
+        medicines = []
+        for line in raw_text.split("\n"):
+            clean = line.strip().lstrip("•-*123456789. ").strip()
+            clean = clean.replace("**", "").replace("*", "").strip()
+            # Remove dosage form prefixes
+            for prefix in ["tab.", "tab ", "cap.", "cap ", "syr.", "syr ", "inj.", "inj "]:
+                if clean.lower().startswith(prefix):
+                    clean = clean[len(prefix):].strip()
+            # Filter out non-medicine conversational lines
+            if clean and len(clean) > 1 and not clean.lower().startswith("here are") and not clean.lower().startswith("based on") and not clean.lower().startswith("note:"):
+                medicines.append(clean)
 
-        # Multi-model fallback chain to bypass free-tier daily quota exhaustion
-        candidate_models = ["gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
-
-        for model_name in candidate_models:
-            try:
-                vision_model = genai.GenerativeModel(model_name)
-                content_input = [prompt, pil_image] if pil_image is not None else [prompt, {"mime_type": mime_type, "data": image_bytes}]
-
-                # Run in executor thread to prevent blocking the async loop
-                response = await asyncio.to_thread(vision_model.generate_content, content_input)
-                result_text = (response.text or "").strip()
-
-                if result_text == "NONE" or not result_text:
-                    continue
-
-                medicines = []
-                for line in result_text.split("\n"):
-                    clean_line = line.strip().lstrip("•-*123456789. ").strip()
-                    if clean_line and len(clean_line) > 1 and not clean_line.lower().startswith("here are"):
-                        medicines.append(clean_line)
-
-                if medicines:
-                    logger.info(f"Image OCR ({model_name}) extracted {len(medicines)} medicine names: {medicines}")
-                    return medicines
-            except Exception as model_err:
-                logger.warning(f"Vision OCR model {model_name} failed: {model_err}")
-                continue
-
-        logger.warning("All vision models failed to extract medicines.")
-        return []
+        logger.info(f"Image OCR extracted {len(medicines)} medicines: {medicines}")
+        return medicines
 
     except Exception as e:
         logger.error(f"Image OCR pipeline failed: {e}")
