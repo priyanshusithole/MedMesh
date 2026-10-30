@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediTrace — Prescription Safety & Timing Intelligence</title>
+  
+  <!-- Inter Font Family -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN with customized configuration -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+          },
+          colors: {
+            bitter: {
+              DEFAULT: '#3e3f16',
+              dark: '#2b2c0f',
+              hover: '#343512',
+            },
+            olive: {
+              DEFAULT: '#8A9A5B',
+              dark: '#738249',
+              light: '#A3B376',
+              surface: 'rgba(138, 154, 91, 0.15)',
+            },
+            brand: {
+              900: '#17324D',
+              800: '#1E4563',
+              700: '#245C83',
+              600: '#0D9488',
+              'teal-dark': '#0F766E',
+              100: '#D7F0EC',
+              50: '#EAF7F5',
+            },
+            neutral: {
+              950: '#17212B',
+              900: '#263746',
+              700: '#475569',
+              600: '#64748B',
+              500: '#718096',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+              50: '#F5F8FA',
+            },
+            status: {
+              success: '#166534',
+              'success-bg': '#EAF7EE',
+              'success-border': '#B7E4C7',
+              warning: '#92400E',
+              'warning-bg': '#FFF4DE',
+              'warning-border': '#F5D79A',
+              danger: '#B42318',
+              'danger-bg': '#FCEBEC',
+              'danger-border': '#F3C1C1',
+              info: '#245C83',
+              'info-bg': '#EAF3FA',
+              'info-border': '#C7DDEC',
+            }
+          },
+          boxShadow: {
+            card: '0 2px 8px rgba(23, 50, 77, 0.05)',
+            panel: '0 4px 16px rgba(23, 50, 77, 0.08)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --color-brand-900: #17324D;
+      --color-brand-800: #1E4563;
+      --color-brand-700: #245C83;
+      --color-brand-600: #0D9488;
+      --color-brand-teal-dark: #0F766E;
+      --color-brand-100: #D7F0EC;
+      --color-brand-50: #EAF7F5;
+      --color-text-strong: #17212B;
+      --color-text: #263746;
+      --color-text-secondary: #475569;
+      --color-text-muted: #64748B;
+      --color-border-strong: #CBD5E1;
+      --color-border: #E2E8F0;
+      --color-surface-subtle: #F1F5F9;
+      --color-background: #F5F8FA;
+      --color-surface: #FFFFFF;
+    }
+
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      background-color: var(--color-background);
+      color: var(--color-text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Accessibility focus ring */
+    :focus-visible {
+      outline: 3px solid rgba(62, 63, 22, 0.45);
+      outline-offset: 2px;
+    }
+
+    /* Strict transition rule: animate only transform and opacity */
+    .transition-custom {
+      transition-property: transform, opacity;
+      transition-duration: 200ms;
+      transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Print optimization stylesheet for Doctor/Pharmacist consultation sheet */
+    @media print {
+      aside, header, #input-panel, #scenarios-bar, #profile-section, #audio-controls-row, #btn-run-audit, #drop-zone, .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+      }
+      main {
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      .shadow-card, .shadow-sm {
+        box-shadow: none !important;
+        border: 1px solid #CBD5E1 !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+
+  <!-- Desktop Fixed Sidebar (Olive Green #8A9A5B Theme) -->
+  <aside class="w-full md:w-64 bg-[#8A9A5B] text-slate-100 flex-shrink-0 flex flex-col justify-between border-r border-[#78884C] shadow-sm">
+    <div>
+      <!-- Product Branding Header -->
+      <div class="h-16 flex items-center px-6 border-b border-[#78884C]/80">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded bg-white flex items-center justify-center text-[#8A9A5B] shadow-sm">
+            <i data-lucide="shield-plus" class="w-5 h-5 text-[#8A9A5B]"></i>
+          </div>
+          <div>
+            <span class="text-base font-bold text-white tracking-tight">MediTrace</span>
+            <span class="block text-[11px] text-emerald-100 font-medium tracking-normal -mt-0.5">Clinical Safety Engine</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-3 space-y-1">
+        <a href="#audit" class="flex items-center px-3 py-2.5 rounded-md text-sm font-semibold bg-[#758449] text-white border-l-4 border-white transition-custom shadow-sm">
+          <i data-lucide="clipboard-check" class="w-4 h-4 mr-3 text-white"></i>
+          Prescription Audit
+        </a>
+        <a href="#schedule-section-anchor" class="flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom">
+          <i data-lucide="clock" class="w-4 h-4 mr-3 text-emerald-100"></i>
+          24-Hour Dose Schedule
+        </a>
+        <button onclick="window.print()" class="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom text-left">
+          <i data-lucide="printer" class="w-4 h-4 mr-3 text-emerald-100"></i>
+          Print Clinician Handout
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar Footer / System Status -->
+    <div class="p-4 border-t border-[#78884C]/80">
+      <div class="bg-[#758449]/70 rounded-lg p-3 border border-[#6B7942]">
+        <div class="flex items-center space-x-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-300"></span>
+          <span class="text-xs font-semibold text-white uppercase tracking-wider">Engine Status</span>
+        </div>
+        <p class="text-xs text-emerald-100 mt-1">RxNorm & Beers Rules Loaded</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Application Area -->
+  <div class="flex-1 flex flex-col min-w-0">
+    
+    <!-- Top Header Bar -->
+    <header class="h-16 bg-white border-b border-neutral-200 px-6 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center space-x-2 text-sm text-neutral-600">
+        <span class="font-medium text-neutral-900">Workspaces</span>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-neutral-400"></i>
+        <span>Prescription Review</span>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <!-- Patient Context Badge -->
+        <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-md bg-neutral-100 border border-neutral-200">
+          <i data-lucide="user" class="w-4 h-4 text-neutral-600"></i>
+          <span class="text-xs text-neutral-600">Active Patient:</span>
+          <span class="text-xs font-semibold text-neutral-900" id="top-patient-display">Not specified</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Content Container -->
+    <main class="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8" id="app-main-container">
+      
+      <!-- Page Title & Clinical Subtitle -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-neutral-950 tracking-tight">Prescription Safety Audit</h1>
+          <p class="text-sm text-neutral-600 mt-1">Verify polypharmacy interactions, duplicate active ingredients, allergy conflicts, and geriatric guidelines.</p>
+        </div>
+
+        <!-- Print Action Button -->
+        <div class="no-print">
+          <button onclick="window.print()" class="px-4 py-2 border border-neutral-300 rounded-lg text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-custom flex items-center space-x-1.5">
+            <i data-lucide="printer" class="w-4 h-4 text-neutral-600"></i>
+            <span>Print Clinician Handout</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Userflow Step 1: Personal Details Section (Matching Userflow Diagram) -->
+      <div id="profile-section" class="bg-white rounded-xl p-5 border border-neutral-200 shadow-card">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-neutral-200">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="user-check" class="w-4 h-4 text-brand-700"></i>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-neutral-900">Step 1: Patient Personal Details</h2>
+          </div>
+          <span class="text-xs text-neutral-500">Cross-referenced against medication chemical compositions</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- 1. Patient Name -->
+          <div>
+            <label for="patient-name-input" class="block text-xs font-medium text-neutral-700 mb-1">Patient Name</label>
+            <input type="text" id="patient-name-input" placeholder="e.g. John Doe" 
+              class="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg text-neutral-900 focus:border-brand-600 transition-custom"
+              onchange="updatePatientContext()">
+          </div>
+
+          <!-- 2. Patient Age -->
+          <div>
+            <label for="patient-age-input" class="block text-xs font-medium text-neutral-700 mb-1">Age</label>
+            <input type="number" id="patient-age-input" min="0" max="110" placeholder="e.g. 68" 
+              class="w-full px-3 py-2 text-sm font-semibold bg-white border border-neutral-300 rounded-lg text-neutral-900 focus:border-brand-600 transition-custom"
+              onchange="validateAge(this); updatePatientContext()">
+          </div>
+
+          <!-- 3. Gender -->
+          <div>
+            <label for="patient-gender-input" class="block text-xs font-medium text-neutral-700 mb-1">Gender</label>
+            <select id="patient-gender-input" 
+              class="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg text-neutral-900 focus:border-brand-600 transition-custom"
+              onchange="updatePatientContext()">
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- 4. Known Allergies / Chemicals Allergic To -->
+          <div>
+            <label class="block text-xs font-medium text-neutral-700 mb-1">Known Allergies (if any)</label>
+            <div class="flex gap-1.5">
+              <input type="text" id="allergy-input" placeholder="e.g. Aspirin, Penicillin" 
+                class="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder:text-neutral-400 focus:border-brand-600 transition-custom"
+                onkeydown="if(event.key === 'Enter') { event.preventDefault(); addAllergyFromInput(); }">
+              <button onclick="addAllergyFromInput()" class="px-3.5 py-2 text-xs font-semibold bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded-lg transition-custom shadow-sm">Add</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Allergy Chips Bar -->
+        <div class="mt-3 flex items-center space-x-2 flex-wrap">
+          <span class="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Documented Allergies:</span>
+          <div id="allergies-chips-container" class="flex flex-wrap gap-1.5">
+            <span class="text-xs text-neutral-400 italic">None reported</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Userflow Step 2: Home Page (Medicines Already in Use & Scan Prescription) -->
+      <div id="workspace-content" class="space-y-6">
+
+        <!-- Input Grid: Manual Entry & Document Upload -->
+        <div id="input-panel" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- Left Column: Medicines in Use / Added -->
+          <div class="lg:col-span-2 bg-white rounded-xl p-6 border border-neutral-200 shadow-card flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="pill" class="w-4 h-4 text-[#3e3f16]"></i>
+                  <h2 class="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Medicines Already In Use / Prescribed</h2>
+                </div>
+                <button onclick="clearAllMeds()" class="text-xs text-neutral-500 hover:text-neutral-900 transition-custom">Clear All</button>
+              </div>
+
+              <!-- Input row: Medicine name + Add button -->
+              <div class="flex gap-2 mb-4">
+                <div class="relative flex-1">
+                  <input type="text" id="med-input" placeholder="Enter medicine (e.g. Warfarin 5mg, Dolo 650, Telma 40)" 
+                    class="w-full px-3.5 py-2.5 text-sm bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder:text-neutral-400 focus:border-[#3e3f16] transition-custom"
+                    onkeydown="if(event.key === 'Enter') { event.preventDefault(); addMedicineFromInput(); }">
+                </div>
+                <button onclick="addMedicineFromInput()" 
+                  class="px-5 py-2.5 text-sm font-semibold bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded-lg transition-custom shadow-sm flex items-center space-x-1">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span>Add</span>
+                </button>
+              </div>
+
+              <!-- Active Medicine Chips Container -->
+              <div class="min-h-[96px] p-3 rounded-lg bg-neutral-50 border border-neutral-200">
+                <div class="text-[11px] text-neutral-500 mb-2 font-medium uppercase tracking-wider flex items-center justify-between">
+                  <span>Queued Medications (<span id="med-count">0</span>)</span>
+                  <span class="normal-case text-[11px] text-neutral-400">Click x to remove</span>
+                </div>
+                <div id="chips-container" class="flex flex-wrap gap-2">
+                  <span class="text-xs text-neutral-400 italic py-2" id="empty-chips-msg">No medicines added yet. Enter names above or scan a prescription.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parameters and Execution Button -->
+            <div class="pt-6 mt-6 border-t border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+              <!-- Primary Audit Button (Bitter Olive #3e3f16) -->
+              <button id="btn-run-audit" onclick="runSafetyAudit()" 
+                class="px-6 py-2.5 bg-[#3e3f16] hover:bg-[#2b2c0f] text-white text-sm font-semibold rounded-lg shadow-sm transition-custom flex items-center justify-center space-x-2">
+                <i data-lucide="shield-check" class="w-4 h-4" id="audit-btn-icon"></i>
+                <span id="audit-btn-text">Run Safety Audit</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Scan Prescription (Gemini Vision OCR) -->
+          <div class="bg-white rounded-xl p-6 border border-neutral-200 shadow-card flex flex-col justify-between">
+            <div>
+              <div class="flex items-center space-x-2 mb-4">
+                <i data-lucide="scan-line" class="w-4 h-4 text-brand-600"></i>
+                <h2 class="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Scan Prescription (OCR)</h2>
+              </div>
+              <p class="text-xs text-neutral-600 mb-4">Upload a doctor prescription slip or medicine strip photo to extract medication names via Gemini Vision.</p>
+
+              <!-- Drag and drop zone -->
+              <div id="drop-zone" 
+                class="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center bg-neutral-50 hover:bg-brand-50 hover:border-brand-600 transition-custom cursor-pointer flex flex-col items-center justify-center min-h-[160px]"
+                onclick="document.getElementById('file-input').click()">
+                <i data-lucide="upload-cloud" class="w-8 h-8 text-neutral-400 mb-2"></i>
+                <span class="text-xs font-semibold text-neutral-800">Click to upload prescription</span>
+                <span class="text-[11px] text-neutral-500 mt-1">PNG, JPG, or WebP up to 10MB</span>
+                <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/png,image/webp" onchange="handleImageUpload(event)">
+              </div>
+
+              <!-- Uploading indicator -->
+              <div id="upload-status" class="hidden mt-3 text-xs text-neutral-600 flex items-center space-x-2">
+                <div class="w-3.5 h-3.5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+                <span id="upload-status-text">Analyzing prescription with Gemini Vision...</span>
+              </div>
+            </div>
+
+            <!-- Traceability note -->
+            <div class="mt-4 pt-4 border-t border-neutral-200">
+              <p class="text-[11px] text-neutral-500 leading-normal">
+                Human verification: Extracted medicines stage as editable chips to ensure accuracy.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Userflow Step 3: Displays / Results (Matching Diagram's 3 Result Categories) -->
+        <div id="audit-results-section" class="hidden space-y-6">
+
+          <!-- 1. Hero Traffic Light Status Banner -->
+          <div id="hero-status-card" class="rounded-xl p-6 border transition-custom">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="flex items-start space-x-4">
+                <div id="hero-status-icon-wrap" class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <i id="hero-status-icon" data-lucide="alert-octagon" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span id="hero-status-badge" class="px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider">Requires Attention</span>
+                    <span class="text-xs text-neutral-500" id="hero-timestamp">Generated just now</span>
+                  </div>
+                  <h3 id="hero-status-title" class="text-lg font-bold text-neutral-950 mt-1">Critical Interaction Risks Detected</h3>
+                  <p id="hero-status-desc" class="text-sm text-neutral-700 mt-0.5">Contraindications and potential hazards found in this regimen.</p>
+                </div>
+              </div>
+
+              <!-- Quick Findings Summary Counters -->
+              <div class="flex items-center space-x-3 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-neutral-200 self-start sm:self-auto">
+                <div class="text-center px-3 border-r border-neutral-200">
+                  <span class="block text-base font-bold text-status-danger" id="count-high">0</span>
+                  <span class="text-[10px] font-medium uppercase tracking-wider text-neutral-600">Avoid</span>
+                </div>
+                <div class="text-center px-3 border-r border-neutral-200">
+                  <span class="block text-base font-bold text-status-warning" id="count-duplicates">0</span>
+                  <span class="text-[10px] font-medium uppercase tracking-wider text-neutral-600">Same Salt</span>
+                </div>
+                <div class="text-center px-3">
+                  <span class="block text-base font-bold text-status-success" id="count-fine">0</span>
+                  <span class="text-[10px] font-medium uppercase tracking-wider text-neutral-600">Clear</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Audio Caregiver Brief Controls Bar -->
+            <div id="audio-controls-row" class="mt-4 pt-4 border-t border-neutral-200/80 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center space-x-2 text-xs font-semibold text-neutral-800">
+                <i data-lucide="volume-2" class="w-4 h-4 text-brand-700"></i>
+                <span>Caregiver Audio Briefing:</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="speakCaregiverBrief('en')" class="px-3 py-1.5 rounded-md border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-medium text-neutral-800 flex items-center space-x-1.5 transition-custom">
+                  <i data-lucide="volume-1" class="w-3.5 h-3.5 text-brand-700"></i>
+                  <span>Listen in English</span>
+                </button>
+                <button onclick="speakCaregiverBrief('hi')" class="px-3 py-1.5 rounded-md border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-medium text-neutral-800 flex items-center space-x-1.5 transition-custom">
+                  <i data-lucide="volume-1" class="w-3.5 h-3.5 text-brand-700"></i>
+                  <span>Listen in Hindi</span>
+                </button>
+                <button onclick="stopAudioBrief()" class="px-2.5 py-1.5 rounded-md border border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-xs text-neutral-600 transition-custom" title="Stop Audio">
+                  <i data-lucide="volume-x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: "Medicines that you should probably avoid" (Contraindications & Allergies) -->
+          <div id="avoid-section-card" class="bg-white rounded-xl p-6 border border-neutral-200 shadow-card">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-neutral-200">
+              <div class="flex items-center space-x-2 text-status-danger">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                <h3 class="text-sm font-semibold uppercase tracking-wider">1. Medicines That You Should Probably Avoid</h3>
+              </div>
+              <span class="text-xs text-neutral-500 font-medium" id="avoid-count-label">0 Conflicts Logged</span>
+            </div>
+            <div id="avoid-findings-list" class="space-y-3">
+              <!-- Rendered avoid cards -->
+            </div>
+          </div>
+
+          <!-- Section 2: "Two Medicines are the same" (Duplicate Active Ingredients) -->
+          <div id="duplicates-section-card" class="bg-white rounded-xl p-6 border border-neutral-200 shadow-card">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-neutral-200">
+              <div class="flex items-center space-x-2 text-status-warning">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                <h3 class="text-sm font-semibold uppercase tracking-wider">2. Two (or More) Medicines Are the Same</h3>
+              </div>
+              <span class="text-xs text-neutral-500 font-medium" id="duplicate-count-label">0 Duplicates Logged</span>
+            </div>
+            <div id="duplicate-findings-list" class="space-y-3">
+              <!-- Rendered duplicate cards -->
+            </div>
+          </div>
+
+          <!-- Section 3: "Everything is fine" (Verified Active Ingredients) -->
+          <div id="fine-section-card" class="bg-white rounded-xl p-6 border border-neutral-200 shadow-card">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-neutral-200">
+              <div class="flex items-center space-x-2 text-status-success">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                <h3 class="text-sm font-semibold uppercase tracking-wider">3. Everything Is Fine (Verified Medications)</h3>
+              </div>
+              <span class="text-xs text-neutral-500 font-medium" id="fine-count-label">0 Verified</span>
+            </div>
+            <div id="fine-meds-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <!-- Rendered fine medication pills -->
+            </div>
+          </div>
+
+          <!-- Unmatched / Unverified Medications Card -->
+          <div id="unmatched-card" class="hidden bg-white rounded-xl p-6 border border-neutral-200 shadow-card">
+            <div class="flex items-center space-x-2 text-status-info mb-3">
+              <i data-lucide="help-circle" class="w-4 h-4"></i>
+              <h3 class="text-sm font-semibold uppercase tracking-wider">Unverified Medications (Not Checked)</h3>
+            </div>
+            <p class="text-xs text-neutral-600 mb-3">
+              These entries could not be matched in medical databases or web compositions. They have not been checked for interactions.
+            </p>
+            <div id="unmatched-list" class="space-y-2"></div>
+          </div>
+
+          <!-- 24-Hour Chronological Dose Schedule Grid -->
+          <div id="schedule-section-anchor" class="bg-white rounded-xl p-6 border border-neutral-200 shadow-card space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-neutral-200 gap-2">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="clock" class="w-4 h-4 text-brand-700"></i>
+                  <h3 class="text-sm font-semibold uppercase tracking-wider text-neutral-900">24-Hour Chronological Dose Schedule</h3>
+                </div>
+                <p class="text-xs text-neutral-600 mt-0.5">Daily time slots optimized to avoid spacing conflicts and nighttime fall hazards.</p>
+              </div>
+              <span class="text-xs text-teal-800 bg-brand-50 px-3 py-1 rounded border border-brand-100 font-medium">
+                Conflict-Spaced Regimen
+              </span>
+            </div>
+
+            <!-- 4 Time Slot Columns Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-neutral-200">
+                    <span class="text-xs font-bold text-neutral-900 uppercase tracking-wide">Morning</span>
+                    <span class="text-[11px] font-semibold text-neutral-600 bg-white px-2 py-0.5 rounded border border-neutral-200">8:00 AM</span>
+                  </div>
+                  <p class="text-[11px] text-neutral-500 mt-2">Take with breakfast or 30 mins before for stomach protection.</p>
+                  <div id="slot-morning-meds" class="mt-3 space-y-2">
+                    <span class="text-xs text-neutral-400 italic">No medications scheduled.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-neutral-200">
+                    <span class="text-xs font-bold text-neutral-900 uppercase tracking-wide">Afternoon</span>
+                    <span class="text-[11px] font-semibold text-neutral-600 bg-white px-2 py-0.5 rounded border border-neutral-200">1:00 PM</span>
+                  </div>
+                  <p class="text-[11px] text-neutral-500 mt-2">Take with lunch. Spaced away from morning medications.</p>
+                  <div id="slot-afternoon-meds" class="mt-3 space-y-2">
+                    <span class="text-xs text-neutral-400 italic">No medications scheduled.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-neutral-200">
+                    <span class="text-xs font-bold text-neutral-900 uppercase tracking-wide">Evening</span>
+                    <span class="text-[11px] font-semibold text-neutral-600 bg-white px-2 py-0.5 rounded border border-neutral-200">7:00 PM</span>
+                  </div>
+                  <p class="text-[11px] text-neutral-500 mt-2">Take with dinner meal and water.</p>
+                  <div id="slot-evening-meds" class="mt-3 space-y-2">
+                    <span class="text-xs text-neutral-400 italic">No medications scheduled.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-neutral-200">
+                    <span class="text-xs font-bold text-neutral-900 uppercase tracking-wide">Bedtime</span>
+                    <span class="text-[11px] font-semibold text-neutral-600 bg-white px-2 py-0.5 rounded border border-neutral-200">10:00 PM</span>
+                  </div>
+                  <p class="text-[11px] text-neutral-500 mt-2">Statins & sedatives. Keep water by bedside.</p>
+                  <div id="slot-bedtime-meds" class="mt-3 space-y-2">
+                    <span class="text-xs text-neutral-400 italic">No medications scheduled.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-[11px] text-neutral-500 p-2.5 rounded bg-neutral-100 flex items-center space-x-2">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-neutral-600 flex-shrink-0"></i>
+              <span>Always verify with your pharmacist before altering dose intervals. Do not double doses if a window is missed.</span>
+            </div>
+          </div>
+
+          <!-- Regulatory & Clinical Disclaimer -->
+          <div class="p-4 rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-600 text-[11px] leading-relaxed">
+            <span class="font-semibold text-neutral-800">Clinical Decision Support Notice:</span>
+            MediTrace provides information support only. These findings are informational and are not a substitute for professional clinical judgment. Always consult a qualified physician or pharmacist before modifying any medication regimen. Interaction sources: FDA Black Box Warnings, DDInter, and AGS Beers Criteria 2023.
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Core JavaScript -->
+  <script>
+    // State management
+    let patientProfile = {
+      name: "",
+      age: null,
+      gender: "Not specified",
+      allergies: []
+    };
+
+    let queuedMedicines = [];
+    let lastAuditReport = null;
+
+    // Initialize UI on load
+    document.addEventListener("DOMContentLoaded", () => {
+      renderChips();
+      renderAllergies();
+      updatePatientContext();
+      lucide.createIcons();
+    });
+
+    // Patient Context updater
+    function updatePatientContext() {
+      const name = document.getElementById("patient-name-input").value.trim();
+      const ageVal = document.getElementById("patient-age-input").value;
+      const gender = document.getElementById("patient-gender-input").value;
+      
+      patientProfile.name = name || "Anonymous Patient";
+      patientProfile.age = ageVal ? parseInt(ageVal, 10) : 0;
+      patientProfile.gender = gender;
+
+      const topDisplay = document.getElementById("top-patient-display");
+      if (!name && !ageVal) {
+        topDisplay.textContent = "Senior Care Profile";
+      } else {
+        const parts = [];
+        if (name) parts.push(name);
+        if (ageVal) parts.push(`Age: ${ageVal}`);
+        if (gender && gender !== "Not specified") parts.push(gender);
+        topDisplay.textContent = parts.join(", ");
+      }
+    }
+
+    // Allergies Management
+    function addAllergyFromInput() {
+      const input = document.getElementById("allergy-input");
+      const val = input.value.trim();
+      if (!val) return;
+      if (!patientProfile.allergies.includes(val)) {
+        patientProfile.allergies.push(val);
+      }
+      input.value = "";
+      renderAllergies();
+    }
+
+    function removeAllergy(index) {
+      patientProfile.allergies.splice(index, 1);
+      renderAllergies();
+    }
+
+    function renderAllergies() {
+      const container = document.getElementById("allergies-chips-container");
+      if (patientProfile.allergies.length === 0) {
+        container.innerHTML = '<span class="text-xs text-neutral-400 italic">None reported</span>';
+        return;
+      }
+      container.innerHTML = "";
+      patientProfile.allergies.forEach((allergy, index) => {
+        const chip = document.createElement("span");
+        chip.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 border border-red-200";
+        chip.innerHTML = `
+          <span>${escapeHtml(allergy)}</span>
+          <button onclick="removeAllergy(${index})" class="ml-1 text-red-500 hover:text-red-800">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        `;
+        container.appendChild(chip);
+      });
+      lucide.createIcons();
+    }
+
+    // Render medication chips
+    function renderChips() {
+      const container = document.getElementById("chips-container");
+      const countLabel = document.getElementById("med-count");
+      countLabel.textContent = queuedMedicines.length;
+
+      if (queuedMedicines.length === 0) {
+        container.innerHTML = '<span class="text-xs text-neutral-400 italic py-2" id="empty-chips-msg">No medicines added yet. Enter names above or scan a prescription.</span>';
+        return;
+      }
+
+      container.innerHTML = "";
+      queuedMedicines.forEach((med, index) => {
+        const chip = document.createElement("div");
+        chip.className = "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-brand-50 text-brand-900 border border-brand-100 transition-custom";
+        chip.innerHTML = `
+          <span>${escapeHtml(med)}</span>
+          <button onclick="removeMedicine(${index})" class="ml-1.5 text-neutral-400 hover:text-red-700 focus:outline-none">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        `;
+        container.appendChild(chip);
+      });
+
+      lucide.createIcons();
+    }
+
+    function addMedicineFromInput() {
+      const input = document.getElementById("med-input");
+      const name = input.value.trim();
+      if (!name) return;
+
+      if (queuedMedicines.length >= 30) {
+        alert("Maximum 30 medications allowed per audit batch.");
+        return;
+      }
+
+      queuedMedicines.push(name);
+      input.value = "";
+      renderChips();
+      input.focus();
+    }
+
+    function removeMedicine(index) {
+      queuedMedicines.splice(index, 1);
+      renderChips();
+    }
+
+    function clearAllMeds() {
+      queuedMedicines = [];
+      renderChips();
+    }
+
+    function validateAge(input) {
+      let val = parseInt(input.value, 10);
+      if (isNaN(val) || val < 0) val = 0;
+      if (val > 110) val = 110;
+      input.value = val;
+    }
+
+    // Presets matching Userflow
+    const DEMO_PRESETS = {
+      grandma: {
+        name: "Eleanor Vance",
+        age: 72,
+        gender: "Female",
+        allergies: [],
+        names: ["Warfarin 5mg", "Brufen 400", "Aspirin 100mg", "Lisinopril 10mg", "Diazepam 5mg"]
+      },
+      duplicate: {
+        name: "Ramesh Sharma",
+        age: 69,
+        gender: "Male",
+        allergies: [],
+        names: ["Dolo 650", "Calpol 500", "Paracip 500", "Pacimol 500"]
+      },
+      allergy: {
+        name: "Pooja Patel",
+        age: 64,
+        gender: "Female",
+        allergies: ["Aspirin"],
+        names: ["Ecosprin 75mg", "Metformin 500mg", "Pantocid 40mg"]
+      },
+      safe: {
+        name: "Robert Chen",
+        age: 60,
+        gender: "Male",
+        allergies: [],
+        names: ["Metformin 500mg", "Amlodipine 5mg", "Atorvastatin 10mg"]
+      }
+    };
+
+    function loadScenario(key) {
+      const preset = DEMO_PRESETS[key];
+      if (!preset) return;
+      document.getElementById("patient-name-input").value = preset.name;
+      document.getElementById("patient-age-input").value = preset.age;
+      document.getElementById("patient-gender-input").value = preset.gender;
+      patientProfile.allergies = [...preset.allergies];
+      queuedMedicines = [...preset.names];
+      updatePatientContext();
+      renderAllergies();
+      renderChips();
+      runSafetyAudit();
+    }
+
+    // Prescription Photo Upload handler
+    async function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById("upload-status");
+      const statusText = document.getElementById("upload-status-text");
+      statusEl.classList.remove("hidden");
+      statusText.textContent = `Analyzing ${file.name} with Gemini Vision...`;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("patient_age", document.getElementById("patient-age-input").value);
+      formData.append("explain", "true");
+
+      try {
+        const response = await fetch("/api/check-image", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+        if (data.detected_medicines && data.detected_medicines.length > 0) {
+          data.detected_medicines.forEach(m => {
+            if (!queuedMedicines.includes(m)) queuedMedicines.push(m);
+          });
+          renderChips();
+          statusText.textContent = `Extracted ${data.detected_medicines.length} medicine(s) for verification.`;
+        } else {
+          statusText.textContent = data.message || "No legible medicines detected. Please enter manually.";
+        }
+      } catch (err) {
+        statusText.textContent = "Upload failed or server unreachable. Please enter manually.";
+      } finally {
+        setTimeout(() => {
+          statusEl.classList.add("hidden");
+        }, 5000);
+      }
+    }
+
+    // Run Safety Audit with Allergy and Profile Data
+    async function runSafetyAudit() {
+      if (queuedMedicines.length === 0) {
+        alert("Please enter at least one medication name to run the audit.");
+        return;
+      }
+
+      const btn = document.getElementById("btn-run-audit");
+      const btnText = document.getElementById("audit-btn-text");
+
+      btn.disabled = true;
+      btn.classList.add("opacity-75");
+      btnText.textContent = "Running Classification Engine...";
+
+      updatePatientContext();
+
+      try {
+        const response = await fetch("/api/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            names: queuedMedicines,
+            patient_age: patientProfile.age,
+            patient_name: patientProfile.name,
+            patient_gender: patientProfile.gender,
+            allergies: patientProfile.allergies,
+            explain: true
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || "Audit execution failed");
+        }
+
+        const report = await response.json();
+        lastAuditReport = report;
+        renderUserflowResults(report);
+        renderSchedule(report.schedule);
+
+      } catch (err) {
+        alert("Clinical Audit Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove("opacity-75");
+        btnText.textContent = "Run Safety Audit";
+      }
+    }
+
+    // Render Results Grouped Exactly into Userflow's 3 Displays
+    function renderUserflowResults(report) {
+      const resultsSection = document.getElementById("audit-results-section");
+      resultsSection.classList.remove("hidden");
+
+      // Categorize findings into Avoid vs Duplicates vs Fine
+      const avoidFindings = (report.findings || []).filter(f => f.type === "interaction" || f.type === "beers_elderly" || f.type === "allergy_conflict");
+      const duplicateFindings = (report.findings || []).filter(f => f.type === "duplicate");
+      const verifiedMeds = report.medicines || [];
+
+      // Update Quick Counters
+      document.getElementById("count-high").textContent = avoidFindings.length;
+      document.getElementById("count-duplicates").textContent = duplicateFindings.length;
+      document.getElementById("count-fine").textContent = verifiedMeds.length;
+      document.getElementById("hero-timestamp").textContent = "Audited at " + new Date().toLocaleTimeString();
+
+      // Top Hero Banner
+      const heroCard = document.getElementById("hero-status-card");
+      const heroIconWrap = document.getElementById("hero-status-icon-wrap");
+      const heroIcon = document.getElementById("hero-status-icon");
+      const heroBadge = document.getElementById("hero-status-badge");
+      const heroTitle = document.getElementById("hero-status-title");
+      const heroDesc = document.getElementById("hero-status-desc");
+
+      if (avoidFindings.length > 0) {
+        heroCard.className = "rounded-xl p-6 border bg-status-danger-bg border-status-danger-border transition-custom";
+        heroIconWrap.className = "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-100 text-status-danger";
+        heroIcon.setAttribute("data-lucide", "alert-octagon");
+        heroBadge.className = "px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-red-200 text-red-900";
+        heroBadge.textContent = "Requires Attention";
+        heroTitle.textContent = "Contraindications & Medicines to Avoid Detected";
+        heroTitle.className = "text-lg font-bold text-red-950 mt-1";
+        heroDesc.textContent = `${avoidFindings.length} dangerous conflict(s) or allergy contraindication(s) flagged for ${report.patient_name || 'patient'}.`;
+      } else if (duplicateFindings.length > 0) {
+        heroCard.className = "rounded-xl p-6 border bg-status-warning-bg border-status-warning-border transition-custom";
+        heroIconWrap.className = "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-100 text-status-warning";
+        heroIcon.setAttribute("data-lucide", "alert-triangle");
+        heroBadge.className = "px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900";
+        heroBadge.textContent = "Needs Review";
+        heroTitle.textContent = "Duplicate Medicines Detected (Same Active Salt)";
+        heroTitle.className = "text-lg font-bold text-amber-950 mt-1";
+        heroDesc.textContent = "Multiple brands containing the exact same chemical substance were identified.";
+      } else {
+        heroCard.className = "rounded-xl p-6 border bg-status-success-bg border-status-success-border transition-custom";
+        heroIconWrap.className = "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-100 text-status-success";
+        heroIcon.setAttribute("data-lucide", "check-circle");
+        heroBadge.className = "px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-200 text-emerald-900";
+        heroBadge.textContent = "Everything Is Fine";
+        heroTitle.textContent = "Everything Is Fine — No Conflicts Found";
+        heroTitle.className = "text-lg font-bold text-emerald-950 mt-1";
+        heroDesc.textContent = "Prescription verified safe. No pairwise interactions, duplicate ingredients, or allergy clashes found.";
+      }
+
+      // Display 1: Medicines to Avoid
+      const avoidContainer = document.getElementById("avoid-findings-list");
+      document.getElementById("avoid-count-label").textContent = `${avoidFindings.length} Logged`;
+      avoidContainer.innerHTML = "";
+
+      if (avoidFindings.length === 0) {
+        avoidContainer.innerHTML = `
+          <div class="p-4 text-center text-xs text-neutral-500 bg-neutral-50 rounded-lg border border-neutral-200">
+            No contraindications or medicines to avoid found for this patient.
+          </div>
+        `;
+      } else {
+        avoidFindings.forEach(f => {
+          const card = document.createElement("div");
+          card.className = "p-4 rounded-lg border border-l-4 border-l-red-600 border-neutral-200 bg-white shadow-sm space-y-2";
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800">${f.type.replace('_', ' ')}</span>
+                <h4 class="text-sm font-bold text-neutral-900 mt-1">${escapeHtml(f.title)}</h4>
+              </div>
+              <span class="text-[11px] text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">${escapeHtml(f.source || 'Clinical Authority')}</span>
+            </div>
+            <p class="text-xs text-neutral-700 bg-neutral-50 p-2.5 rounded border border-neutral-200/80 leading-relaxed">${escapeHtml(f.detail)}</p>
+            ${f.detail_plain ? `<div class="text-xs text-brand-900 bg-brand-50 p-2.5 rounded border border-brand-100 leading-relaxed"><span class="font-semibold text-brand-700">Plain Language Guide:</span> ${escapeHtml(f.detail_plain)}</div>` : ''}
+          `;
+          avoidContainer.appendChild(card);
+        });
+      }
+
+      // Display 2: Two Medicines Are the Same (Duplicates)
+      const duplicateContainer = document.getElementById("duplicate-findings-list");
+      document.getElementById("duplicate-count-label").textContent = `${duplicateFindings.length} Logged`;
+      duplicateContainer.innerHTML = "";
+
+      if (duplicateFindings.length === 0) {
+        duplicateContainer.innerHTML = `
+          <div class="p-4 text-center text-xs text-neutral-500 bg-neutral-50 rounded-lg border border-neutral-200">
+            No repeated or duplicate active ingredients detected.
+          </div>
+        `;
+      } else {
+        duplicateFindings.forEach(f => {
+          const card = document.createElement("div");
+          card.className = "p-4 rounded-lg border border-l-4 border-l-amber-500 border-neutral-200 bg-white shadow-sm space-y-2";
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">Duplicate Salt</span>
+                <h4 class="text-sm font-bold text-neutral-900 mt-1">${escapeHtml(f.title)}</h4>
+              </div>
+              <span class="text-[11px] text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">Overdose Hazard</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1 text-xs">
+              <span class="font-semibold text-neutral-700">Identified in:</span>
+              ${(f.drugs || []).map(d => `<span class="px-2 py-0.5 rounded bg-neutral-100 border border-neutral-200 font-medium">${escapeHtml(d)}</span>`).join('')}
+            </div>
+            <p class="text-xs text-neutral-700 bg-neutral-50 p-2.5 rounded border border-neutral-200/80 leading-relaxed">${escapeHtml(f.detail)}</p>
+          `;
+          duplicateContainer.appendChild(card);
+        });
+      }
+
+      // Display 3: Everything is Fine (Verified Active Ingredients)
+      const fineContainer = document.getElementById("fine-meds-list");
+      document.getElementById("fine-count-label").textContent = `${verifiedMeds.length} Verified`;
+      fineContainer.innerHTML = "";
+
+      verifiedMeds.forEach(m => {
+        const item = document.createElement("div");
+        item.className = "p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 flex items-center justify-between text-xs";
+        item.innerHTML = `
+          <div>
+            <div class="font-bold text-neutral-900">${escapeHtml(m.input)}</div>
+            <div class="text-[11px] text-emerald-800 font-medium">Salt: ${escapeHtml(m.ingredient)}</div>
+          </div>
+          <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+        `;
+        fineContainer.appendChild(item);
+      });
+
+      // Unmatched Items
+      const unmatchedCard = document.getElementById("unmatched-card");
+      const unmatchedList = document.getElementById("unmatched-list");
+      unmatchedList.innerHTML = "";
+      if (report.unmatched && report.unmatched.length > 0) {
+        unmatchedCard.classList.remove("hidden");
+        report.unmatched.forEach(item => {
+          const row = document.createElement("div");
+          row.className = "flex items-center justify-between p-2.5 rounded bg-neutral-50 border border-neutral-200 text-xs";
+          row.innerHTML = `
+            <span class="font-medium text-neutral-900">${escapeHtml(item.input)}</span>
+            <span class="text-neutral-500 italic">Not recognized in clinical databases</span>
+          `;
+          unmatchedList.appendChild(row);
+        });
+      } else {
+        unmatchedCard.classList.add("hidden");
+      }
+
+      lucide.createIcons();
+      resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Stage 4: Render 24-Hour Dose Schedule
+    function renderSchedule(scheduleData) {
+      if (!scheduleData || !scheduleData.schedule) return;
+
+      const slots = ["morning", "afternoon", "evening", "bedtime"];
+      slots.forEach(slotKey => {
+        const slot = scheduleData.schedule[slotKey];
+        const container = document.getElementById(`slot-${slotKey}-meds`);
+        if (!container) return;
+
+        if (!slot || !slot.medicines || slot.medicines.length === 0) {
+          container.innerHTML = '<span class="text-xs text-neutral-400 italic">No medications scheduled.</span>';
+        } else {
+          container.innerHTML = "";
+          slot.medicines.forEach(m => {
+            const item = document.createElement("div");
+            item.className = "p-2 rounded bg-white border border-neutral-200 text-xs space-y-1 shadow-sm";
+            item.innerHTML = `
+              <div class="font-semibold text-neutral-900">${escapeHtml(m.name)}</div>
+              <div class="text-[11px] text-teal-800 font-medium">${escapeHtml(m.tip)}</div>
+            `;
+            container.appendChild(item);
+          });
+        }
+      });
+      lucide.createIcons();
+    }
+
+    // Audio Briefing
+    function speakCaregiverBrief(lang = 'en') {
+      if (!('speechSynthesis' in window)) {
+        alert("Audio synthesis is not supported on this browser.");
+        return;
+      }
+      window.speechSynthesis.cancel();
+      if (!lastAuditReport) {
+        alert("Please run a safety audit first to generate an audio briefing.");
+        return;
+      }
+
+      let textToSpeak = "";
+      const highCount = lastAuditReport.summary.high;
+      const modCount = lastAuditReport.summary.moderate;
+
+      if (lang === 'hi') {
+        if (highCount > 0) {
+          textToSpeak = `Dhyan dijiye. Is prescription mein ${highCount} gambhir khatre ya allergy samasya mili hain. Dawai lene se pehle apne doctor se turant salah lein.`;
+        } else if (modCount > 0) {
+          textToSpeak = `Prescription mein savdhani chetavani mili hai. Kripya samay par dawai lein aur doctor se sampark karein.`;
+        } else {
+          textToSpeak = `Aapki dawaiyon mein koi bada khatra nahi mila hai. Sabhi dawaiyan safe aur verified hain.`;
+        }
+      } else {
+        if (highCount > 0) {
+          textToSpeak = `Attention caregiver. We detected ${highCount} high-risk conflicts or allergy contraindications in this regimen. Please consult your physician before taking these together.`;
+        } else if (modCount > 0) {
+          textToSpeak = `Caution advisory. Duplicate ingredients or moderate interactions were identified. Please monitor patient reaction.`;
+        } else {
+          textToSpeak = `All clear. Everything is fine. No dangerous drug interactions, duplicate ingredients, or allergy clashes detected.`;
+        }
+      }
+
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+      utterance.rate = 0.92;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopAudioBrief() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

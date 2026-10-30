@@ -34,10 +34,19 @@ TEACHING NOTE — What is "middleware"?
 """
 
 import os
+import sys
 import logging
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Optional, List
 from dotenv import load_dotenv
+
+# Ensure backend and root directories are in Python's module search path
+_THIS_DIR = Path(__file__).resolve().parent
+if str(_THIS_DIR) not in sys.path:
+    sys.path.insert(0, str(_THIS_DIR))
+if str(_THIS_DIR.parent) not in sys.path:
+    sys.path.insert(0, str(_THIS_DIR.parent))
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,7 +54,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 # Import our own modules (files we created)
@@ -238,20 +247,26 @@ class NormalizeRequest(BaseModel):
 # ROUTES / ENDPOINTS
 # =============================================================================
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     """
     Serve the frontend index.html at the root URL.
-    When a user visits http://localhost:8000/, they get the web app.
+    When a user visits the root URL, they get the web app.
     """
-    frontend_index = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
-    if os.path.exists(frontend_index):
-        return FileResponse(frontend_index)
-    return {
-        "message": "MedGuard API is running!",
-        "docs": "/docs",
-        "health": "/health"
-    }
+    candidates = [
+        Path(__file__).resolve().parent.parent / "frontend" / "index.html",
+        Path(__file__).resolve().parent / "index.html",
+        Path.cwd() / "frontend" / "index.html",
+        Path.cwd() / "index.html"
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                return HTMLResponse(content=p.read_text(encoding="utf-8"))
+            except Exception as e:
+                logger.error(f"Error reading frontend file {p}: {e}")
+
+    return HTMLResponse("<h1>MedGuard API is running!</h1><p><a href='/docs'>Interactive API Documentation</a></p>")
 
 
 @app.get(
