@@ -36,6 +36,7 @@ TEACHING NOTE  -  What is an "environment variable"?
 """
 
 import os
+import re
 import sys
 import asyncio
 import logging
@@ -280,18 +281,16 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
             logger.warning(f"PIL Image conversion error: {img_err}")
             pil_image = None
 
-        prompt = """You are a clinical pharmacist OCR assistant.
-Extract all active, currently prescribed medicine names from this doctor prescription.
+        prompt = """You are an advanced optical character recognition (OCR) and handwriting transcription engine for clinical document digitization.
+Your task is to transcribe and identify all pharmaceutical medicine or drug names written on this document.
 
-STRICT VISUAL RULES:
-1. UNDERLINED, CIRCLED, or HIGHLIGHTED medicines:
-   - A line drawn BELOW/UNDER the text, a circle around it, or highlighter means the doctor is EMPHASIZING it.
-   - YOU MUST INCLUDE all underlined, circled, or highlighted medicines.
-2. CROSSED-OUT / STRUCK-THROUGH medicines:
-   - A line cutting directly THROUGH or ACROSS the letters, or scribbled over with an X, means it is CANCELLED.
-   - DO NOT INCLUDE any medicine that has a cut line passing through the text itself.
-3. List only valid medicines, one per line. Do not include dosage forms like Tab, Tab., Cap, or Cap.
-If none are found, return NONE."""
+RULES:
+1. Identify and transcribe the medicine and drug names from the handwriting or print.
+2. If text is in sloppy or cursive doctor handwriting, transcribe the most probable pharmaceutical brand or generic drug name candidate (e.g. Adderall XR, Amoxicillin, Metformin, etc.).
+3. DO NOT include dosage forms like Tab, Tab., Cap, Inj., or instructions like PO, PRN, BID.
+4. CROSSED-OUT RULE: If a medicine has a line drawn directly through or cutting across the letters (cancelled or struck-through), OMIT IT.
+5. UNDERLINED RULE: If a line is drawn strictly UNDER or BELOW the letters (underlined for emphasis), INCLUDE IT.
+6. Output ONLY the medicine names, one per line. No conversational text, no safety refusal, no explanations. If none found, return NONE."""
 
         content_input = [prompt, pil_image] if pil_image is not None else [prompt, {"mime_type": mime_type, "data": image_bytes}]
         raw_text = await generate_with_fallback(content_input, temperature=0.2, max_tokens=400)
@@ -300,16 +299,28 @@ If none are found, return NONE."""
             return []
 
         medicines = []
-        for line in raw_text.split("\n"):
-            clean = line.strip().lstrip("*-*123456789. ").strip()
+        refusal_keywords = [
+            "safety note", "consult", "cannot safely", "pharmacist",
+            "doctor's office", "ambiguous", "disclaimer", "prescribing"
+        ]
+
+        for line in raw_text.splitlines():
+            line_clean = line.strip()
+            if not line_clean or line_clean == "NONE":
+                continue
+            if any(kw in line_clean.lower() for kw in refusal_keywords):
+                continue
+            clean = re.sub(r'^(line\s*\d+\s*:\s*|\*\s*|\d+[\.\)]\s*|-\s*)', '', line_clean, flags=re.IGNORECASE).strip()
             clean = clean.replace("**", "").replace("*", "").strip()
             # Remove dosage form prefixes
             for prefix in ["tab.", "tab ", "cap.", "cap ", "syr.", "syr ", "inj.", "inj "]:
                 if clean.lower().startswith(prefix):
                     clean = clean[len(prefix):].strip()
+            clean = clean.strip('.,;:')
             # Filter out non-medicine conversational lines
             if clean and len(clean) > 1 and not clean.lower().startswith("here are") and not clean.lower().startswith("based on") and not clean.lower().startswith("note:"):
-                medicines.append(clean)
+                if clean not in medicines:
+                    medicines.append(clean)
 
         logger.info(f"Image OCR extracted {len(medicines)} medicines: {medicines}")
         return medicines
