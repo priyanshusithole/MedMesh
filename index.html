@@ -812,21 +812,35 @@
             <!-- Audio Caregiver Brief Controls Bar -->
             <div id="audio-controls-row" class="mt-4 pt-4 border-t border-neutral-200/80 flex flex-wrap items-center justify-between gap-3">
               <div class="flex items-center space-x-2 text-xs font-semibold text-neutral-800">
-                <i data-lucide="volume-2" class="w-4 h-4 text-brand-700"></i>
-                <span>Caregiver Audio Briefing:</span>
+                <i data-lucide="volume-2" class="w-4 h-4 text-[#3e3f16]"></i>
+                <span>Affectionate Caregiver Audio Briefing:</span>
               </div>
               <div class="flex items-center space-x-2">
-                <button onclick="speakCaregiverBrief('en')" class="px-3 py-1.5 rounded-md border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-medium text-neutral-800 flex items-center space-x-1.5 transition-custom">
-                  <i data-lucide="volume-1" class="w-3.5 h-3.5 text-brand-700"></i>
+                <button onclick="speakCaregiverBrief('en')" class="px-3 py-1.5 rounded-md border border-neutral-300 bg-white hover:bg-[#8A9A5B]/10 text-xs font-medium text-neutral-800 flex items-center space-x-1.5 transition-custom shadow-xs">
+                  <i data-lucide="volume-1" class="w-3.5 h-3.5 text-[#3e3f16]"></i>
                   <span>Listen in English</span>
                 </button>
-                <button onclick="speakCaregiverBrief('hi')" class="px-3 py-1.5 rounded-md border border-neutral-300 bg-white hover:bg-neutral-50 text-xs font-medium text-neutral-800 flex items-center space-x-1.5 transition-custom">
-                  <i data-lucide="volume-1" class="w-3.5 h-3.5 text-brand-700"></i>
+                <button onclick="speakCaregiverBrief('hi')" class="px-3 py-1.5 rounded-md border border-neutral-300 bg-white hover:bg-[#8A9A5B]/10 text-xs font-medium text-neutral-800 flex items-center space-x-1.5 transition-custom shadow-xs">
+                  <i data-lucide="volume-1" class="w-3.5 h-3.5 text-[#3e3f16]"></i>
                   <span>Listen in Hindi</span>
                 </button>
                 <button onclick="stopAudioBrief()" class="px-2.5 py-1.5 rounded-md border border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-xs text-neutral-600 transition-custom" title="Stop Audio">
                   <i data-lucide="volume-x" class="w-3.5 h-3.5"></i>
                 </button>
+              </div>
+            </div>
+
+            <!-- Live Affectionate Audio Brief Transcript Box -->
+            <div id="audio-brief-transcript" class="hidden mt-3 p-3.5 bg-amber-50/80 border border-amber-200/90 rounded-lg text-xs transition-custom">
+              <div class="flex items-start space-x-2.5">
+                <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-800 shrink-0 mt-0.5"></i>
+                <div class="flex-1">
+                  <div class="font-semibold text-amber-950 flex items-center justify-between">
+                    <span id="audio-brief-speaker-title">Affectionate Caregiver Brief</span>
+                    <span id="audio-brief-status-pill" class="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded font-medium tracking-wide">Playing Voice</span>
+                  </div>
+                  <p id="audio-brief-text" class="mt-1.5 text-neutral-700 leading-relaxed italic"></p>
+                </div>
               </div>
             </div>
           </div>
@@ -1982,7 +1996,78 @@
       lucide.createIcons();
     }
 
-    // Audio Briefing
+    // Cultural Affectionate Referencing Engine
+    function getAffectionateHonorific(lang = 'hi') {
+      const nameInput = document.getElementById("patient-name-input");
+      const ageInput = document.getElementById("patient-age-input");
+      const genderInput = document.getElementById("patient-gender-input");
+
+      const nameVal = (nameInput ? nameInput.value.trim() : "") || patientProfile.name || (lastAuditReport ? lastAuditReport.patient_name : "");
+      const cleanName = (nameVal && nameVal !== "Anonymous Patient") ? nameVal.trim() : "";
+
+      let age = null;
+      if (ageInput && ageInput.value !== "") {
+        const parsed = parseInt(ageInput.value, 10);
+        if (!isNaN(parsed)) age = parsed;
+      }
+      if (age === null && patientProfile.age !== null && patientProfile.age !== undefined) {
+        age = parseInt(patientProfile.age, 10);
+      }
+      if (age === null && lastAuditReport && lastAuditReport.patient_age !== null) {
+        age = parseInt(lastAuditReport.patient_age, 10);
+      }
+
+      const gender = ((genderInput ? genderInput.value : "") || patientProfile.gender || (lastAuditReport ? lastAuditReport.patient_gender : "") || "").toLowerCase();
+      const isFemale = gender.includes("female");
+      const isMale = gender.includes("male") && !isFemale;
+
+      // Female Referencing:
+      // 0 to 10: "Beta"
+      // 11 to 39: "Didi ji"
+      // 40 to 59: "Aunty ji"
+      // 60+: "Dadi ji"
+      if (isFemale) {
+        if (age !== null && age <= 10) {
+          return lang === 'hi' ? (cleanName ? `${cleanName} beta` : "Beta") : (cleanName ? `dear little ${cleanName}` : "dear beta");
+        } else if (age !== null && age >= 60) {
+          return lang === 'hi' ? (cleanName ? `${cleanName} Dadi ji` : "Dadi ji") : (cleanName ? `dear ${cleanName} Dadi ji` : "dear Dadi ji");
+        } else if (age !== null && age >= 40) {
+          return lang === 'hi' ? (cleanName ? `${cleanName} Aunty ji` : "Aunty ji") : (cleanName ? `dear ${cleanName} Aunty ji` : "dear Aunty ji");
+        } else {
+          return lang === 'hi' ? (cleanName ? `${cleanName} Didi ji` : "Didi ji") : (cleanName ? `dear ${cleanName}` : "dear sister");
+        }
+      }
+
+      // Male Referencing:
+      // 0 to 10: "Beta"
+      // 11 to 39: "Bhaiya ji"
+      // 40 to 59: "Uncle ji" (respectful, polite, non-offending)
+      // 60+: "Dadaji" (affectionate grandfather honorific)
+      if (isMale) {
+        if (age !== null && age <= 10) {
+          return lang === 'hi' ? (cleanName ? `${cleanName} beta` : "Beta") : (cleanName ? `dear little ${cleanName}` : "dear beta");
+        } else if (age !== null && age >= 60) {
+          return lang === 'hi' ? (cleanName ? `${cleanName} Dadaji` : "Dadaji") : (cleanName ? `dear ${cleanName} Dadaji` : "dear Dadaji");
+        } else if (age !== null && age >= 40) {
+          return lang === 'hi' ? (cleanName ? `${cleanName} Uncle ji` : "Uncle ji") : (cleanName ? `dear ${cleanName} Uncle ji` : "dear Uncle ji");
+        } else {
+          return lang === 'hi' ? (cleanName ? `${cleanName} Bhaiya ji` : "Bhaiya ji") : (cleanName ? `dear ${cleanName}` : "dear brother");
+        }
+      }
+
+      // Gender Unspecified / Other
+      if (age !== null && age <= 10) {
+        return lang === 'hi' ? (cleanName ? `${cleanName} beta` : "Beta") : (cleanName ? `dear little ${cleanName}` : "dear beta");
+      } else if (age !== null && age >= 60) {
+        return lang === 'hi' ? (cleanName ? `${cleanName} ji` : "Aadarniya ji") : (cleanName ? `dear respected ${cleanName}` : "dear respected elder");
+      } else if (age !== null && age >= 40) {
+        return lang === 'hi' ? (cleanName ? `${cleanName} ji` : "Aadarniya ji") : (cleanName ? `respected ${cleanName}` : "respected family member");
+      } else {
+        return lang === 'hi' ? (cleanName ? `${cleanName} ji` : "Aadarniya ji") : (cleanName ? `dear ${cleanName}` : "dear family member");
+      }
+    }
+
+    // Affectionate Audio Briefing
     function speakCaregiverBrief(lang = 'en') {
       if (!('speechSynthesis' in window)) {
         alert("Audio synthesis is not supported on this browser.");
@@ -1994,31 +2079,68 @@
         return;
       }
 
-      let textToSpeak = "";
-      const highCount = lastAuditReport.summary.high;
-      const modCount = lastAuditReport.summary.moderate;
+      const honorific = getAffectionateHonorific(lang);
+      const highCount = (lastAuditReport.summary && lastAuditReport.summary.high) || 0;
+      const modCount = (lastAuditReport.summary && lastAuditReport.summary.moderate) || 0;
 
+      let speechText = "";
       if (lang === 'hi') {
         if (highCount > 0) {
-          textToSpeak = `Dhyan dijiye. Is prescription mein ${highCount} gambhir khatre ya allergy samasya mili hain. Dawai lene se pehle apne doctor se turant salah lein.`;
+          speechText = `Pranam ${honorific}! Dhyan se suniye, hum aapki sehat ka bohot khayal rakhna chahte hain. Is prescription mein ${highCount} gambhir khatre ya dawaiyon ka aapas mein takrav mila hai. Kripya bina doctor ki salah ke ye dawai saath mein bilkul mat lijiye. Aapki tabiyat hum sabke liye sabse anmol hai, isliye pehle apne doctor se zaroor baat kar lein.`;
         } else if (modCount > 0) {
-          textToSpeak = `Prescription mein savdhani chetavani mili hai. Kripya samay par dawai lein aur doctor se sampark karein.`;
+          speechText = `Namaste ${honorific}! Aapki tabiyat hamesha achi rahe, yahi hamari sabse badi chinta hai. Prescription ki jaanch mein kuch aisi dawaiyan mili hain jinke ingredients milte-julte hain ya savdhani rakhne ki zaroorat hai. Kripya dawaiyan niyamit samay par lein aur thoda savdhan rahein. Agar koi bhi bechaini lage, toh turant doctor ya caregiver ko batayein.`;
         } else {
-          textToSpeak = `Aapki dawaiyon mein koi bada khatra nahi mila hai. Sabhi dawaiyan safe aur verified hain.`;
+          speechText = `Pranam ${honorific}! Bohot khushi ki baat hai, aapki sabhi dawaiyan bilkul surakshit aur jaanchi hui hain. Koi bhi dangerous drug interaction ya allergy ka khatra nahi mila hai. Samay par apni dawaiyan lijiye, paushtik aahar lein, aur hamesha swasth aur muskurate rahiye!`;
         }
       } else {
         if (highCount > 0) {
-          textToSpeak = `Attention caregiver. We detected ${highCount} high-risk conflicts or allergy contraindications in this regimen. Please consult your physician before taking these together.`;
+          speechText = `Warm greetings, ${honorific}! We care deeply about your health and well-being. Please listen with extra care: our safety audit detected ${highCount} high-risk conflict(s) or allergy alerts in this regimen. Please do not take these medicines together before consulting your doctor or pharmacist. Your safety is our highest priority, so please speak with your physician right away.`;
         } else if (modCount > 0) {
-          textToSpeak = `Caution advisory. Duplicate ingredients or moderate interactions were identified. Please monitor patient reaction.`;
+          speechText = `Hello ${honorific}! We want you to feel comfortable and cared for every single day. In reviewing your medications, we noticed some duplicate ingredients or mild cautions. Please take your doses strictly on time as scheduled with water, and if you notice any dizziness or discomfort, please let your doctor or caregiver know.`;
         } else {
-          textToSpeak = `All clear. Everything is fine. No dangerous drug interactions, duplicate ingredients, or allergy clashes detected.`;
+          speechText = `Warm greetings, ${honorific}! Wonderful news: all of your prescribed medications are verified, safe, and completely compatible. There are no dangerous interactions or duplicate ingredients found. Please take your doses faithfully on schedule, rest well, and stay healthy and smiling!`;
         }
       }
 
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
-      utterance.rate = 0.92;
+      // Render visible transcript card
+      const transcriptBox = document.getElementById("audio-brief-transcript");
+      const titleElem = document.getElementById("audio-brief-speaker-title");
+      const textElem = document.getElementById("audio-brief-text");
+      const statusPill = document.getElementById("audio-brief-status-pill");
+
+      if (transcriptBox && titleElem && textElem) {
+        transcriptBox.classList.remove("hidden");
+        titleElem.textContent = lang === 'hi' 
+          ? `Affectionate Briefing for ${honorific} (Hindi)`
+          : `Affectionate Briefing for ${honorific} (English)`;
+        textElem.textContent = speechText;
+        if (statusPill) statusPill.textContent = "Playing Voice";
+        if (window.lucide) lucide.createIcons();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+      utterance.rate = 0.88; // Gentle, comforting cadence
+      utterance.pitch = 1.05; // Warm, affectionate tone
+
+      // Pick preferred warm voices if available
+      const voices = window.speechSynthesis.getVoices();
+      if (lang === 'hi') {
+        const hiVoice = voices.find(v => (v.lang && v.lang.startsWith("hi")) || (v.name && v.name.toLowerCase().includes("hindi")));
+        if (hiVoice) utterance.voice = hiVoice;
+      } else {
+        const inVoice = voices.find(v => (v.lang === "en-IN" || v.lang === "en_IN") || (v.name && (v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("aria"))));
+        if (inVoice) utterance.voice = inVoice;
+      }
+
+      utterance.onend = () => {
+        if (statusPill) statusPill.textContent = "Completed";
+      };
+
+      utterance.onerror = () => {
+        if (statusPill) statusPill.textContent = "Stopped";
+      };
+
       window.speechSynthesis.speak(utterance);
     }
 
@@ -2026,6 +2148,8 @@
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
+      const statusPill = document.getElementById("audio-brief-status-pill");
+      if (statusPill) statusPill.textContent = "Stopped";
     }
 
     function escapeHtml(text) {
