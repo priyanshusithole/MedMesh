@@ -175,12 +175,19 @@
 
     <!-- Sidebar Footer / System Status -->
     <div class="p-4 border-t border-[#78884C]/80">
-      <div class="bg-[#758449]/70 rounded-lg p-3 border border-[#6B7942]">
-        <div class="flex items-center space-x-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-300"></span>
-          <span class="text-xs font-semibold text-white uppercase tracking-wider">Engine Status</span>
+      <div id="engine-status-box" class="bg-[#758449]/70 rounded-lg p-3 border border-[#6B7942] transition-custom">
+        <div class="flex items-center space-x-2.5">
+          <!-- Check Engine SVG Icon: Grey when idle, Vivid Yellow (#FBBF24) when running -->
+          <svg id="engine-status-icon" viewBox="0 0 32 26" class="w-6 h-6 text-neutral-300 transition-all duration-300 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3h8v2h-8z" />
+            <path d="M3 10v6M5 8v10" />
+            <path d="M7 8h5l1-2h6l1 2h3l2 3h2v4h-2l1 2v3h-4l-2 2H11l-2-2H7V8z" />
+          </svg>
+          <div class="min-w-0">
+            <span id="engine-status-title" class="text-xs font-bold text-white uppercase tracking-wider block">Engine: Idle</span>
+            <span id="engine-status-desc" class="text-[11px] text-emerald-100 block mt-0.5 truncate">Standby · Ready to audit</span>
+          </div>
         </div>
-        <p class="text-xs text-emerald-100 mt-1">RxNorm & Beers Rules Loaded</p>
       </div>
     </div>
   </aside>
@@ -765,6 +772,50 @@
       runSafetyAudit();
     }
 
+    // Live Check-Engine Status Controller (Grey when idle, Vivid Yellow #FBBF24 when running)
+    function setEngineRunning(isRunning, message = "") {
+      const icon = document.getElementById("engine-status-icon");
+      const title = document.getElementById("engine-status-title");
+      const desc = document.getElementById("engine-status-desc");
+      const box = document.getElementById("engine-status-box");
+
+      if (isRunning) {
+        if (icon) {
+          icon.classList.remove("text-neutral-300");
+          icon.classList.add("text-[#FBBF24]", "animate-pulse");
+          icon.style.filter = "drop-shadow(0 0 6px rgba(251, 191, 36, 0.6))";
+        }
+        if (title) {
+          title.textContent = "Engine: Running";
+          title.classList.remove("text-white");
+          title.classList.add("text-[#FDE68A]");
+        }
+        if (desc) {
+          desc.textContent = message || "Analyzing interactions & active salts...";
+        }
+        if (box) {
+          box.classList.add("border-amber-400/60");
+        }
+      } else {
+        if (icon) {
+          icon.classList.remove("text-[#FBBF24]", "animate-pulse");
+          icon.classList.add("text-neutral-300");
+          icon.style.filter = "none";
+        }
+        if (title) {
+          title.textContent = "Engine: Idle";
+          title.classList.remove("text-[#FDE68A]");
+          title.classList.add("text-white");
+        }
+        if (desc) {
+          desc.textContent = message || "Standby · Ready to audit";
+        }
+        if (box) {
+          box.classList.remove("border-amber-400/60");
+        }
+      }
+    }
+
     // Prescription Photo Upload handler
     async function handleImageUpload(event) {
       const file = event.target.files[0];
@@ -774,6 +825,7 @@
       const statusText = document.getElementById("upload-status-text");
       statusEl.classList.remove("hidden");
       statusText.textContent = `Analyzing ${file.name} with Gemini Vision...`;
+      setEngineRunning(true, "Gemini Vision OCR analyzing...");
 
       const formData = new FormData();
       formData.append("file", file);
@@ -799,6 +851,7 @@
       } catch (err) {
         statusText.textContent = "Upload failed or server unreachable. Please enter manually.";
       } finally {
+        setEngineRunning(false, "Standby · Ready to audit");
         setTimeout(() => {
           statusEl.classList.add("hidden");
         }, 5000);
@@ -820,6 +873,7 @@
       btnText.textContent = "Running Classification Engine...";
 
       updatePatientContext();
+      setEngineRunning(true, "Scanning RxNorm & Beers rules...");
 
       try {
         const response = await fetch("/api/check", {
@@ -848,6 +902,7 @@
       } catch (err) {
         alert("Clinical Audit Error: " + err.message);
       } finally {
+        setEngineRunning(false, lastAuditReport ? `Audit complete (${lastAuditReport.medicines.length} verified)` : "Standby · Ready to audit");
         btn.disabled = false;
         btn.classList.remove("opacity-75");
         btnText.textContent = "Run Safety Audit";
