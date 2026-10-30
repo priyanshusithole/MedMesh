@@ -18,38 +18,41 @@
 
   <style>
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #F5F7F0;
-      background-image: radial-gradient(#C5CEB0 1.5px, transparent 1.5px);
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #F8FAF9;
+      background-image: radial-gradient(#CBD5C5 1.2px, transparent 1.2px);
       background-size: 20px 20px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Reference Card Styling in MedMesh Olive Palette */
+    /* Clean Clinical Card & Inputs matching Dashboard */
     .tactile-badge {
-      background: #EFF3E6;
-      border: 2px solid #232612;
-      box-shadow: 4px 4px 0px 0px #232612;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     }
 
     .tactile-input {
-      background: #FAFBF7;
-      border: 2px solid #232612;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       transition: all 0.15s ease-in-out;
     }
 
     .tactile-input:focus {
       outline: none;
       border-color: #758449;
-      background: #FFFFFF;
-      box-shadow: 2px 2px 0px 0px #758449;
+      box-shadow: 0 0 0 3px rgba(117, 132, 73, 0.2);
     }
 
     .tactile-btn {
       background-color: #3e3f16;
       color: #FFFFFF;
-      border: 2px solid #232612;
-      box-shadow: 4px 4px 0px 0px #232612;
-      transition: all 0.12s ease;
+      border: 1px solid #2b2c0f;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+      transition: all 0.15s ease;
     }
 
     .tactile-btn:hover {
@@ -58,16 +61,15 @@
     }
 
     .tactile-btn:active {
-      transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0px 0px #232612;
+      transform: translateY(1px);
     }
 
     .glass-portal-card {
-      background: rgba(247, 250, 243, 0.90);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 2px solid rgba(184, 196, 155, 0.95);
-      box-shadow: 0 25px 50px -12px rgba(62, 63, 22, 0.18), 6px 6px 0px 0px rgba(35, 38, 18, 0.15);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
     }
 
     .illustration-mask {
@@ -88,13 +90,13 @@
   <!-- LEFT HALF: Complete Left Side Covered by the Expanded Clinical Illustration -->
   <div class="w-full md:w-1/2 min-h-[45vh] md:min-h-screen relative flex items-center justify-center bg-white overflow-hidden p-6 md:p-12">
     
-    <!-- Tactile Top-Left Corner Badge (Matching Reference) -->
-    <div class="absolute top-6 left-6 z-20 tactile-badge rounded-xl p-3.5 sm:p-4 max-w-xs shadow-md">
-      <h2 class="text-xs sm:text-sm font-black tracking-wider text-[#3e3f16] uppercase">
+    <!-- Top-Left Corner Badge matching Dashboard Title style -->
+    <div class="absolute top-6 left-6 z-20 tactile-badge rounded-xl p-4 max-w-sm">
+      <h2 class="text-sm sm:text-base font-bold text-neutral-950 tracking-tight">
         MedMesh Clinical Portal
       </h2>
-      <p class="text-[11px] sm:text-xs font-bold text-neutral-800 uppercase tracking-wide mt-0.5">
-        Verify Polypharmacy. Protect Senior Care.
+      <p class="text-xs text-neutral-600 mt-1">
+        Verify polypharmacy interactions, duplicate active ingredients, and senior timing.
       </p>
     </div>
 
@@ -114,30 +116,30 @@
     
     <div class="glass-portal-card rounded-3xl p-6 sm:p-9 w-full max-w-md transition-all">
       
-      <!-- Header -->
-      <div class="mb-5">
-        <h1 class="text-2xl sm:text-3xl font-black uppercase tracking-wider text-[#3e3f16]" id="portal-card-title">
+      <!-- Header (Prescription Safety Audit Uniform Font Style) -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-neutral-950 tracking-tight" id="portal-card-title">
           Secure Portal
         </h1>
-        <p class="text-xs sm:text-sm font-semibold text-neutral-600 mt-1" id="portal-card-subtitle">
-          Enter your credentials to access the safety dashboard
+        <p class="text-sm text-neutral-600 mt-1" id="portal-card-subtitle">
+          Verify polypharmacy interactions, duplicate active ingredients, and access your dashboard.
         </p>
       </div>
 
       <!-- Mode Toggle Tabs (Log In / Sign Up) -->
-      <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-neutral-200/60 border border-neutral-300 mb-6">
+      <div class="grid grid-cols-2 gap-1 p-1 rounded-lg bg-neutral-100 border border-neutral-200 mb-6">
         <button 
           type="button" 
           id="tab-btn-login" 
           onclick="switchAuthMode('login')"
-          class="py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all bg-[#758449] text-white shadow-sm border border-[#232612]">
+          class="py-2 rounded-md text-xs font-semibold tracking-normal transition-all bg-[#758449] text-white shadow-sm">
           Log In
         </button>
         <button 
           type="button" 
           id="tab-btn-signup" 
           onclick="switchAuthMode('signup')"
-          class="py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-600 hover:text-neutral-900">
+          class="py-2 rounded-md text-xs font-medium tracking-normal transition-all text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
           Sign Up
         </button>
       </div>
@@ -146,7 +148,7 @@
       <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
         <!-- Patient Unique ID Input -->
         <div>
-          <label for="login-patient-id" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1.5">
+          <label for="login-patient-id" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
             Patient Unique ID
           </label>
           <div class="relative">
@@ -156,7 +158,7 @@
               name="patient_id"
               required
               placeholder="e.g. MED-84920" 
-              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 uppercase placeholder:normal-case placeholder:text-neutral-400 font-mono"
+              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-semibold text-neutral-900 uppercase placeholder:normal-case placeholder:text-neutral-400 font-mono"
             />
             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-neutral-400">
               <i data-lucide="badge-check" class="w-4 h-4"></i>
@@ -168,7 +170,7 @@
         <!-- Password Input -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <label for="login-password" class="block text-xs font-black uppercase tracking-wider text-neutral-800">
+            <label for="login-password" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
               Password
             </label>
             <button type="button" onclick="fillDemoCredentials()" class="text-[11px] font-bold text-[#3e3f16] hover:underline">
@@ -182,7 +184,7 @@
               name="password"
               required
               placeholder="********" 
-              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-medium text-neutral-900 placeholder:text-neutral-400"
             />
             <button 
               type="button" 
@@ -201,7 +203,7 @@
         <button 
           type="submit" 
           id="btn-login-submit"
-          class="tactile-btn w-full py-3.5 px-4 rounded-xl text-sm font-black uppercase tracking-wider text-white flex items-center justify-center space-x-2 mt-2">
+          class="tactile-btn w-full py-2.5 px-4 rounded-lg text-sm font-semibold tracking-normal text-white flex items-center justify-center space-x-2 mt-2 shadow-sm">
           <span>Log In</span>
         </button>
 
@@ -211,7 +213,7 @@
           <button 
             type="button" 
             onclick="switchAuthMode('signup')" 
-            class="text-xs font-black uppercase tracking-wider text-[#3e3f16] hover:underline">
+            class="text-xs font-semibold text-[#758449] hover:text-[#3e3f16] hover:underline">
             Sign Up
           </button>
         </div>
@@ -229,7 +231,7 @@
       <form id="form-signup" onsubmit="handleSignupSubmit(event)" class="space-y-3.5 hidden">
         <!-- Full Name -->
         <div>
-          <label for="signup-name" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+          <label for="signup-name" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
             Patient / Caregiver Name
           </label>
           <input 
@@ -238,13 +240,13 @@
             name="name"
             required
             placeholder="e.g. Margaret Vance" 
-            class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+            class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-medium text-neutral-900 placeholder:text-neutral-400"
           />
         </div>
 
         <!-- Email -->
         <div>
-          <label for="signup-email" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+          <label for="signup-email" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
             Email Address
           </label>
           <input 
@@ -253,13 +255,13 @@
             name="email"
             required
             placeholder="patient@example.com" 
-            class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+            class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-medium text-neutral-900 placeholder:text-neutral-400"
           />
         </div>
 
         <!-- New Password -->
         <div>
-          <label for="signup-password" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+          <label for="signup-password" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
             New Password
           </label>
           <div class="relative">
@@ -270,7 +272,7 @@
               required
               minlength="4"
               placeholder="At least 4 characters" 
-              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-medium text-neutral-900 placeholder:text-neutral-400"
             />
             <button 
               type="button" 
@@ -284,7 +286,7 @@
         <!-- Patient Age & Gender -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label for="signup-age" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+            <label for="signup-age" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
               Age
             </label>
             <input 
@@ -294,17 +296,17 @@
               min="1" 
               max="120"
               placeholder="e.g. 74" 
-              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-medium text-neutral-900 placeholder:text-neutral-400"
             />
           </div>
           <div>
-            <label for="signup-gender" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+            <label for="signup-gender" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1.5">
               Gender
             </label>
             <select 
               id="signup-gender" 
               name="patient_gender"
-              class="tactile-input w-full px-3 py-2.5 rounded-lg text-sm font-bold text-neutral-900">
+              class="tactile-input w-full px-3 py-2.5 rounded-lg text-sm font-medium text-neutral-900">
               <option value="Female">Female</option>
               <option value="Male">Male</option>
               <option value="Other">Other</option>
@@ -321,7 +323,7 @@
         <button 
           type="submit" 
           id="btn-signup-submit"
-          class="tactile-btn w-full py-3.5 px-4 rounded-xl text-sm font-black uppercase tracking-wider text-white flex items-center justify-center space-x-2 mt-2">
+          class="tactile-btn w-full py-2.5 px-4 rounded-lg text-sm font-semibold tracking-normal text-white flex items-center justify-center space-x-2 mt-2 shadow-sm">
           <span>Create Account & Get ID</span>
         </button>
 
@@ -331,7 +333,7 @@
           <button 
             type="button" 
             onclick="switchAuthMode('login')" 
-            class="text-xs font-black uppercase tracking-wider text-[#3e3f16] hover:underline">
+            class="text-xs font-semibold text-[#758449] hover:text-[#3e3f16] hover:underline">
             Log In
           </button>
         </div>
@@ -402,17 +404,17 @@
       if (mode === "login") {
         loginForm.classList.remove("hidden");
         signupForm.classList.add("hidden");
-        subtitle.textContent = "Enter your credentials to access the safety dashboard";
+        subtitle.textContent = "Verify polypharmacy interactions, duplicate active ingredients, and access your dashboard.";
 
-        loginTab.className = "py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all bg-[#758449] text-white shadow-sm border border-[#232612]";
-        signupTab.className = "py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-600 hover:text-neutral-900";
+        loginTab.className = "py-2 rounded-md text-xs font-semibold tracking-normal transition-all bg-[#758449] text-white shadow-sm";
+        signupTab.className = "py-2 rounded-md text-xs font-medium tracking-normal transition-all text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50";
       } else {
         loginForm.classList.add("hidden");
         signupForm.classList.remove("hidden");
-        subtitle.textContent = "Create an account to obtain your Patient Unique ID";
+        subtitle.textContent = "Create an account to obtain your Patient Unique ID and safety profile.";
 
-        signupTab.className = "py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all bg-[#758449] text-white shadow-sm border border-[#232612]";
-        loginTab.className = "py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-600 hover:text-neutral-900";
+        signupTab.className = "py-2 rounded-md text-xs font-semibold tracking-normal transition-all bg-[#758449] text-white shadow-sm";
+        loginTab.className = "py-2 rounded-md text-xs font-medium tracking-normal transition-all text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50";
       }
       lucide.createIcons();
     }
