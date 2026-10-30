@@ -277,10 +277,17 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
             logger.warning(f"PIL Image conversion error: {img_err}")
             pil_image = None
 
-        prompt = """You are a medical OCR assistant.
-Extract all active medicine names from this doctor prescription.
-Do not extract any medicine that has a pen cut line, slash, or strike-through across it (e.g. cancelled/discontinued medicines).
-List only valid medicines, one per line. Do not include dosage forms like Tab, Tab., Cap, or Cap.
+        prompt = """You are a clinical pharmacist OCR assistant.
+Extract all active, currently prescribed medicine names from this doctor prescription.
+
+STRICT VISUAL RULES:
+1. UNDERLINED, CIRCLED, or HIGHLIGHTED medicines:
+   - A line drawn BELOW/UNDER the text, a circle around it, or highlighter means the doctor is EMPHASIZING it.
+   - YOU MUST INCLUDE all underlined, circled, or highlighted medicines.
+2. CROSSED-OUT / STRUCK-THROUGH medicines:
+   - A line cutting directly THROUGH or ACROSS the letters, or scribbled over with an X, means it is CANCELLED.
+   - DO NOT INCLUDE any medicine that has a cut line passing through the text itself.
+3. List only valid medicines, one per line. Do not include dosage forms like Tab, Tab., Cap, or Cap.
 If none are found, return NONE."""
 
         content_input = [prompt, pil_image] if pil_image is not None else [prompt, {"mime_type": mime_type, "data": image_bytes}]
