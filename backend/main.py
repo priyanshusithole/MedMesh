@@ -550,6 +550,18 @@ async def check_image(
 # This block only runs when you execute: python main.py directly.
 # We prefer `uvicorn main:app --reload` but this is a convenience option.
 
+@app.api_route("/api/{full_path:path}", methods=["GET", "POST", "OPTIONS"])
+@app.api_route("/{full_path:path}", methods=["GET", "POST", "OPTIONS"])
+async def debug_catchall(request, full_path: str = ""):
+    logger.warning(f"UNMATCHED ROUTE: method={request.method}, path={request.scope.get('path')}, full_path={full_path}")
+    return {
+        "status": "unmatched_route",
+        "method": request.method,
+        "scope_path": request.scope.get("path"),
+        "full_path": full_path,
+        "headers": {k: v for k, v in request.headers.items() if "auth" not in k.lower()}
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
