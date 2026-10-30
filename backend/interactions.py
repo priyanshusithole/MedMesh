@@ -6,7 +6,7 @@ run three clinical safety checks and return a structured findings list.
 
 THE THREE CHECKS (in order of execution):
   1. Duplicate Active Ingredient Detection
-     → Same molecule, different brand names → immediate 🔴 DANGER
+     → Same molecule, different brand names → immediate DANGER
   2. Pairwise Drug-Drug Interaction Check
      → Every pair of ingredients checked against our curated seed data
   3. Beers Criteria Check (elderly patients, age >= 65)
@@ -114,7 +114,7 @@ def check_duplicate_ingredients(normalized_meds: list[dict]) -> list[dict]:
     HOW IT WORKS:
       1. Group medicines by their ingredient
       2. Any ingredient appearing more than once is a DUPLICATE
-      3. Generate a 🔴 HIGH severity finding for each duplicate group
+      3. Generate a HIGH severity finding for each duplicate group
 
     TEACHING NOTE — collections.defaultdict:
       defaultdict(list) is like a regular dict, but if you access a
@@ -416,7 +416,7 @@ def run_safety_engine(
     }
 
     # ─── Separate matched and unmatched medicines ─────────────────────────────
-    # Unmatched drugs are flagged as ⚪ "Not Checked" — never green "Safe"
+    # Unmatched drugs are flagged as [INFO] "Not Checked" — never green "Safe"
     medicines = []
     unmatched = []
 
@@ -432,7 +432,7 @@ def run_safety_engine(
             unmatched.append({
                 "input": med["input"],
                 "matched": False,
-                "status": "⚪ Not Checked — drug not recognized in our database"
+                "status": "Not Checked — drug not recognized in our database"
             })
 
     # ─── Assemble final report ────────────────────────────────────────────────
@@ -443,7 +443,7 @@ def run_safety_engine(
         "summary": summary,
         "patient_age": patient_age if patient_age else None,
         "disclaimer": (
-            "⚠️ MedGuard provides decision support only. These findings are "
+            "MedGuard provides decision support only. These findings are "
             "informational and are NOT a substitute for professional medical advice. "
             "Always confirm with your doctor or pharmacist before making any changes "
             "to your medications. Interaction data is sourced from FDA labels, DDInter, "

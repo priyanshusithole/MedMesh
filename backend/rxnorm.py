@@ -582,7 +582,7 @@ async def _scrape_drug_composition(drug_name: str) -> str | None:
                     ]
                     for pat in patterns:
                         if re.search(pat, combined_text, re.IGNORECASE):
-                            logger.info(f"🌐 Web Scraper matched: '{drug_name}' contains '{ingredient}'")
+                            logger.info(f" Web Scraper matched: '{drug_name}' contains '{ingredient}'")
                             return ingredient
 
             # ─── Backup Web Fallback: Wikipedia Medical API (No bot-blocking) ───
@@ -595,7 +595,7 @@ async def _scrape_drug_composition(drug_name: str) -> str | None:
 
                 for ingredient in known_ingredients:
                     if ingredient in wiki_text:
-                        logger.info(f"🌐 Wikipedia Medical Intelligence matched: '{drug_name}' → '{ingredient}'")
+                        logger.info(f" Wikipedia Medical Intelligence matched: '{drug_name}' → '{ingredient}'")
                         return ingredient
 
     except Exception as e:

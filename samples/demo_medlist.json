@@ -4,7 +4,7 @@
 
   "grandma_triple_threat": {
     "_scenario": "The main demo scenario — guaranteed to trigger: 1 duplicate, 1 severe interaction, 1 Beers warning",
-    "label": "Grandma's Triple Threat 🚨",
+    "label": "Grandma's Triple Threat ",
     "patient_age": 72,
     "medicines": [
       "Warfarin 5mg",
@@ -24,7 +24,7 @@
 
   "serotonin_trap": {
     "_scenario": "Two doctors, two prescriptions — neither knew about the other",
-    "label": "Serotonin Syndrome Trap ⚠️",
+    "label": "Serotonin Syndrome Trap [ALERT]️",
     "patient_age": 68,
     "medicines": [
       "Sertraline 50mg",
@@ -39,7 +39,7 @@
 
   "statin_antibiotic": {
     "_scenario": "Short-term antibiotic prescription interacts with long-term statin",
-    "label": "Statin-Antibiotic Danger 💊",
+    "label": "Statin-Antibiotic Danger ",
     "patient_age": 60,
     "medicines": [
       "Simvastatin 40mg",
@@ -53,7 +53,7 @@
 
   "all_clear_baseline": {
     "_scenario": "Safe combination — for demonstration of 'all clear' output",
-    "label": "All Clear Baseline ✅",
+    "label": "All Clear Baseline [VERIFIED]",
     "patient_age": 45,
     "medicines": [
       "Omeprazole 20mg",
