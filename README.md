@@ -3,9 +3,9 @@ Here is the complete, professional setup guide formatted for your `README.md`. I
 ---
 
 ```markdown
-# MediTrace — Clinical Prescription Safety & Timing Intelligence
+# MedMesh — Clinical Prescription Safety & Timing Intelligence
 
-MediTrace is an AI-powered polypharmacy conflict detector and 24-hour dose scheduling engine designed for senior care and clinical prescription validation.
+MedMesh is an AI-powered polypharmacy conflict detector and 24-hour dose scheduling engine designed for senior care and clinical prescription validation.
 
 ---
 
