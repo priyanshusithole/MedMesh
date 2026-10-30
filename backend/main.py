@@ -155,6 +155,20 @@ app.add_middleware(
     allow_headers=["*"],          # Allow all headers
 )
 
+@app.middleware("http")
+async def vercel_path_rewrite_middleware(request, call_next):
+    """
+    On Vercel, serverless rewrites point to api/index.py.
+    Vercel sets 'x-matched-path' with the true requested URL.
+    This middleware restores the path so FastAPI matches the correct route.
+    """
+    matched_path = request.headers.get("x-matched-path")
+    current_path = request.scope.get("path", "")
+    if matched_path and ("index.py" in current_path or current_path in ["/api", "/api/"]):
+        clean_path = matched_path.split("?")[0]
+        request.scope["path"] = clean_path
+    return await call_next(request)
+
 
 # =============================================================================
 # STATIC FILE SERVING (Serve the Frontend HTML)
@@ -248,10 +262,6 @@ class NormalizeRequest(BaseModel):
 # =============================================================================
 
 @app.get("/", response_class=HTMLResponse)
-@app.get("/api", response_class=HTMLResponse)
-@app.get("/api/", response_class=HTMLResponse)
-@app.get("/api/index", response_class=HTMLResponse)
-@app.get("/api/index.py", response_class=HTMLResponse)
 @app.get("/index.html", response_class=HTMLResponse)
 async def serve_frontend():
     """
@@ -307,6 +317,7 @@ async def health_check():
     summary="Normalize Drug Names",
     description="Convert brand names or dosage strings to active ingredient names using RxNorm."
 )
+@app.post("/normalize", tags=["Medicine Tools"], summary="Normalize Drug Names Alias")
 async def normalize_endpoint(request: NormalizeRequest):
     """
     Normalize a list of drug names to their active ingredients.
@@ -345,6 +356,7 @@ async def normalize_endpoint(request: NormalizeRequest):
         "interaction conflicts, duplicate active ingredients, and elderly-specific warnings."
     )
 )
+@app.post("/check", tags=["Safety Engine"], summary="Check Medication Safety Alias")
 async def check_medications(request: CheckRequest):
     """
     THE MAIN ENDPOINT — runs the full MedGuard safety pipeline.
@@ -423,6 +435,7 @@ async def check_medications(request: CheckRequest):
     summary="Generate 24-Hour Dose Schedule",
     description="Organizes a regimen into Morning, Lunch, Dinner, and Bedtime slots to avoid conflicts."
 )
+@app.post("/schedule", tags=["Safety Engine"], summary="Generate 24-Hour Dose Schedule Alias")
 async def schedule_endpoint(request: CheckRequest):
     """Generates an optimized 24-hour daily medication timetable."""
     clean_names = [n.strip() for n in request.names if n.strip()]
@@ -444,6 +457,7 @@ async def schedule_endpoint(request: CheckRequest):
         "for user confirmation, then passed to the safety engine."
     )
 )
+@app.post("/check-image", tags=["Safety Engine"], summary="Check Medication Safety from Prescription Photo Alias")
 async def check_image(
     file: UploadFile = File(..., description="Prescription photo (JPEG, PNG, WebP)"),
     patient_age: Optional[int] = Form(default=None, ge=0, le=110),

@@ -183,6 +183,10 @@ async def explain_finding(finding: dict) -> str:
     Returns:
         a plain-English explanation string
     """
+    global _gemini_model
+    if _gemini_model is None:
+        _initialize_gemini()
+
     if _gemini_model is None:
         # Gemini not available — use template (always works)
         return _template_explanation(finding)
@@ -289,15 +293,22 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
     Returns:
         list of detected medicine name strings (to be confirmed by user)
     """
-    if _gemini_model is None:
-        logger.warning("Gemini not available — cannot perform image OCR")
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        global _gemini_model
+        if _gemini_model is None:
+            _initialize_gemini()
+        api_key = os.environ.get("GEMINI_API_KEY")
+
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not configured — cannot perform image OCR")
         return []
 
     try:
         import google.generativeai as genai
+        genai.configure(api_key=api_key)
 
-        # For vision tasks, we need to use the vision-capable model
-        # gemini-3.8-flash supports vision natively
+        # For vision tasks, we use the multimodal gemini-3.8-flash model
         vision_model = genai.GenerativeModel("gemini-3.8-flash")
 
         prompt = """You are analyzing a medical prescription or medicine packaging photo.
