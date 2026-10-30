@@ -518,6 +518,10 @@
           <i data-lucide="printer" class="w-4 h-4 mr-3 text-emerald-100"></i>
           <span>Print Schedule / Handout</span>
         </button>
+        <a href="/login" class="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-100/90 hover:bg-[#7D8C52] hover:text-white transition-custom text-left border-l-4 border-transparent mt-2 pt-2 border-t border-[#78884C]/60">
+          <i data-lucide="log-in" class="w-4 h-4 mr-3 text-emerald-200"></i>
+          <span>Portal Login / Switch ID</span>
+        </a>
       </nav>
     </div>
 
@@ -545,12 +549,24 @@
         <span>Prescription Review</span>
       </div>
 
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
         <!-- Patient Context Badge -->
-        <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-md bg-neutral-100 border border-neutral-200">
-          <i data-lucide="user" class="w-4 h-4 text-neutral-600"></i>
-          <span class="text-xs text-neutral-600">Active Patient:</span>
-          <span class="text-xs font-semibold text-neutral-900" id="top-patient-display">Not specified</span>
+        <div class="flex items-center space-x-2 px-3 py-1.5 rounded-md bg-neutral-100 border border-neutral-200">
+          <div class="w-6 h-6 rounded-full bg-[#8A9A5B]/20 text-[#3e3f16] flex items-center justify-center font-bold text-[10px]">
+            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="text-xs">
+            <span class="font-semibold text-neutral-900" id="top-patient-display">Senior Care Profile</span>
+            <span class="text-[10px] text-neutral-500 font-mono ml-1 font-bold" id="top-patient-id-display"></span>
+          </div>
+        </div>
+
+        <!-- Auth Action (Login / Logout) -->
+        <div id="header-auth-action">
+          <button onclick="handleLogout()" id="btn-header-logout" class="px-2.5 py-1.5 rounded-md text-xs font-semibold text-neutral-600 hover:text-red-700 hover:bg-neutral-100 border border-neutral-200 flex items-center space-x-1.5 transition-custom" title="Log out or switch patient profile">
+            <i data-lucide="log-out" class="w-3.5 h-3.5 text-neutral-500"></i>
+            <span class="hidden sm:inline">Log Out</span>
+          </button>
         </div>
       </div>
     </header>
@@ -1203,11 +1219,45 @@
 
     // Initialize UI on load
     document.addEventListener("DOMContentLoaded", () => {
+      // Check for logged in patient session
+      checkActiveUserSession();
       renderChips();
       renderAllergies();
       updatePatientContext();
       lucide.createIcons();
     });
+
+    function checkActiveUserSession() {
+      const sessionStr = localStorage.getItem("medmesh_session");
+      if (sessionStr) {
+        try {
+          const user = JSON.parse(sessionStr);
+          if (user) {
+            patientProfile.name = user.name || "";
+            patientProfile.age = user.patient_age || null;
+            patientProfile.gender = user.patient_gender || "Not specified";
+            patientProfile.patient_id = user.patient_id || "";
+
+            const nameInput = document.getElementById("patient-name-input");
+            const ageInput = document.getElementById("patient-age-input");
+            const genderInput = document.getElementById("patient-gender-input");
+            if (nameInput && user.name) nameInput.value = user.name;
+            if (ageInput && user.patient_age) ageInput.value = user.patient_age;
+            if (genderInput && user.patient_gender) genderInput.value = user.patient_gender;
+            if (user.allergies && Array.isArray(user.allergies) && user.allergies.length > 0) {
+              patientProfile.allergies = [...user.allergies];
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    function handleLogout() {
+      if (confirm("Log out of current patient session?")) {
+        localStorage.removeItem("medmesh_session");
+        window.location.href = "/login";
+      }
+    }
 
     // Patient Context updater
     function updatePatientContext() {
@@ -1220,6 +1270,10 @@
       patientProfile.gender = gender;
 
       const topDisplay = document.getElementById("top-patient-display");
+      const topIdDisplay = document.getElementById("top-patient-id-display");
+      if (topIdDisplay) {
+        topIdDisplay.textContent = patientProfile.patient_id ? `[${patientProfile.patient_id}]` : "";
+      }
       if (!name && !ageVal) {
         topDisplay.textContent = "Senior Care Profile";
       } else {

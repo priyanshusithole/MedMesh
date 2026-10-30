@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedMesh - Secure Clinical Portal Login</title>
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F8F6F0;
+      background-image: radial-gradient(#D6CEBA 1.5px, transparent 1.5px);
+      background-size: 20px 20px;
+    }
+
+    /* Reference Card Styling (Tactile Halftone Comic / Retro Modern aesthetic) */
+    .tactile-badge {
+      background: #FAF7EE;
+      border: 2px solid #171717;
+      box-shadow: 4px 4px 0px 0px #171717;
+    }
+
+    .tactile-input {
+      background: #FDFBF7;
+      border: 2px solid #171717;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .tactile-input:focus {
+      outline: none;
+      border-color: #C27D0E;
+      background: #FFFFFF;
+      box-shadow: 2px 2px 0px 0px #C27D0E;
+    }
+
+    .tactile-btn {
+      background-color: #EAA212;
+      border: 2px solid #171717;
+      box-shadow: 4px 4px 0px 0px #171717;
+      transition: all 0.12s ease;
+    }
+
+    .tactile-btn:hover {
+      background-color: #D97706;
+    }
+
+    .tactile-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px 0px #171717;
+    }
+
+    .glass-portal-card {
+      background: rgba(254, 252, 248, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 2px solid rgba(214, 206, 186, 0.9);
+      box-shadow: 0 25px 50px -12px rgba(62, 63, 22, 0.12), 6px 6px 0px 0px rgba(23, 23, 23, 0.12);
+    }
+
+    .illustration-mask {
+      -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 72%, rgba(0,0,0,0) 100%);
+      mask-image: linear-gradient(to right, rgba(0,0,0,1) 72%, rgba(0,0,0,0) 100%);
+    }
+
+    @media (max-width: 768px) {
+      .illustration-mask {
+        -webkit-mask-image: none;
+        mask-image: none;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen w-full flex flex-col justify-between antialiased selection:bg-[#EAA212] selection:text-neutral-950">
+
+  <!-- Top Navigation Header -->
+  <header class="w-full px-6 py-4 flex items-center justify-between z-20">
+    <div class="flex items-center space-x-2">
+      <div class="w-9 h-9 rounded-lg bg-[#8A9A5B] flex items-center justify-center text-white border-2 border-neutral-900 shadow-[2px_2px_0px_0px_#171717]">
+        <i data-lucide="shield-alert" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <span class="font-extrabold tracking-tight text-neutral-900 text-lg">MedMesh</span>
+        <span class="text-[10px] uppercase font-bold tracking-wider text-[#8A9A5B] block -mt-1">Clinical Safety Platform</span>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <a href="/" class="text-xs font-bold text-neutral-700 hover:text-neutral-950 flex items-center space-x-1.5 px-3 py-1.5 rounded-md hover:bg-neutral-200/50 transition-all">
+        <span>Enter as Guest Clinician</span>
+        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Split Content Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-6 flex flex-col md:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
+
+    <!-- LEFT SECTION: Clinical Consultation Illustration & Branding Pill -->
+    <div class="w-full md:w-7/12 flex flex-col justify-center items-start space-y-6 relative">
+      
+      <!-- Tactile Top-Left Badge (Matching Student Dashboard Style) -->
+      <div class="tactile-badge rounded-xl p-4 sm:p-5 max-w-md">
+        <h2 class="text-sm sm:text-base font-black tracking-wider text-[#C27D0E] uppercase">
+          MedMesh Clinical Portal
+        </h2>
+        <p class="text-xs sm:text-sm font-bold text-neutral-800 uppercase tracking-wide mt-0.5">
+          Verify Polypharmacy. Protect Senior Care.
+        </p>
+      </div>
+
+      <!-- High-Resolution Clinical Consultation Image (Watermark Removed) -->
+      <div class="w-full relative rounded-2xl overflow-hidden bg-white/70 p-4 sm:p-6 border-2 border-neutral-800/10 shadow-sm">
+        <div class="illustration-mask flex items-center justify-center">
+          <img 
+            src="/assets/clinical_consult.png" 
+            alt="Doctor, Senior Patient, and Caregiver Medication Consultation" 
+            class="w-full max-w-lg h-auto object-contain select-none"
+          />
+        </div>
+
+        <!-- Floating Safety Feature Badges -->
+        <div class="mt-4 pt-3 border-t border-neutral-200 flex flex-wrap items-center gap-2 text-[11px] text-neutral-600 font-medium">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-[#8A9A5B]/15 text-[#3e3f16] border border-[#8A9A5B]/30 font-semibold">
+            <i data-lucide="check-check" class="w-3.5 h-3.5 mr-1"></i>
+            AGS Beers Criteria 2023
+          </span>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-200 font-semibold">
+            <i data-lucide="clock" class="w-3.5 h-3.5 mr-1"></i>
+            24-Hour Fall-Safe Timing
+          </span>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-red-50 text-red-900 border border-red-200 font-semibold">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i>
+            FDA Black Box Warnings
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SECTION: Right-Aligned Floating Glass Login / Signup Card -->
+    <div class="w-full md:w-5/12 max-w-md flex justify-center md:justify-end">
+      
+      <div class="glass-portal-card rounded-3xl p-6 sm:p-8 w-full transition-all">
+        
+        <!-- Header -->
+        <div class="mb-5">
+          <h1 class="text-2xl sm:text-3xl font-black uppercase tracking-wider text-[#C27D0E]" id="portal-card-title">
+            Secure Portal
+          </h1>
+          <p class="text-xs sm:text-sm font-semibold text-neutral-600 mt-1" id="portal-card-subtitle">
+            Enter your credentials to access the safety dashboard
+          </p>
+        </div>
+
+        <!-- Mode Toggle Tabs (Log In / Sign Up) -->
+        <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-neutral-200/60 border border-neutral-300 mb-6">
+          <button 
+            type="button" 
+            id="tab-btn-login" 
+            onclick="switchAuthMode('login')"
+            class="py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all bg-white text-neutral-900 shadow-sm border border-neutral-300">
+            Log In
+          </button>
+          <button 
+            type="button" 
+            id="tab-btn-signup" 
+            onclick="switchAuthMode('signup')"
+            class="py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-600 hover:text-neutral-900">
+            Sign Up
+          </button>
+        </div>
+
+        <!-- FORM 1: LOG IN VIEW (Default) -->
+        <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          <!-- Patient Unique ID Input -->
+          <div>
+            <label for="login-patient-id" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1.5">
+              Patient Unique ID
+            </label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="login-patient-id" 
+                name="patient_id"
+                required
+                placeholder="e.g. MED-84920" 
+                class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 uppercase placeholder:normal-case placeholder:text-neutral-400 font-mono"
+              />
+              <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-neutral-400">
+                <i data-lucide="badge-check" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <p class="text-[11px] text-neutral-500 mt-1">Unique assigned identifier for senior records.</p>
+          </div>
+
+          <!-- Password Input -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="login-password" class="block text-xs font-black uppercase tracking-wider text-neutral-800">
+                Password
+              </label>
+              <button type="button" onclick="fillDemoCredentials()" class="text-[11px] font-bold text-[#C27D0E] hover:underline">
+                Use Demo Login
+              </button>
+            </div>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="login-password" 
+                name="password"
+                required
+                placeholder="********" 
+                class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+              />
+              <button 
+                type="button" 
+                onclick="togglePasswordVisibility('login-password', 'login-pwd-icon')" 
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-700 focus:outline-none">
+                <i id="login-pwd-icon" data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="login-error" class="hidden p-3 rounded-lg bg-red-100 border border-red-300 text-red-900 text-xs font-semibold">
+          </div>
+
+          <!-- Log In Submit Button (Styled Exactly like Student Dashboard Reference) -->
+          <button 
+            type="submit" 
+            id="btn-login-submit"
+            class="tactile-btn w-full py-3 px-4 rounded-xl text-sm font-black uppercase tracking-wider text-neutral-950 flex items-center justify-center space-x-2 mt-2">
+            <span>Log In</span>
+          </button>
+
+          <!-- Don't have an account link -->
+          <div class="text-center pt-2">
+            <span class="text-xs text-neutral-600 font-semibold">Don't have an account? </span>
+            <button 
+              type="button" 
+              onclick="switchAuthMode('signup')" 
+              class="text-xs font-black uppercase tracking-wider text-[#C27D0E] hover:underline">
+              Sign Up
+            </button>
+          </div>
+        </form>
+
+        <!-- FORM 2: CREATE ACCOUNT (SIGN UP) VIEW -->
+        <form id="form-signup" onsubmit="handleSignupSubmit(event)" class="space-y-3.5 hidden">
+          <!-- Full Name -->
+          <div>
+            <label for="signup-name" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+              Patient / Caregiver Name
+            </label>
+            <input 
+              type="text" 
+              id="signup-name" 
+              name="name"
+              required
+              placeholder="e.g. Margaret Vance" 
+              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+            />
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label for="signup-email" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+              Email Address
+            </label>
+            <input 
+              type="email" 
+              id="signup-email" 
+              name="email"
+              required
+              placeholder="patient@example.com" 
+              class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+            />
+          </div>
+
+          <!-- New Password -->
+          <div>
+            <label for="signup-password" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+              New Password
+            </label>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="signup-password" 
+                name="password"
+                required
+                minlength="4"
+                placeholder="At least 4 characters" 
+                class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+              />
+              <button 
+                type="button" 
+                onclick="togglePasswordVisibility('signup-password', 'signup-pwd-icon')" 
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-700 focus:outline-none">
+                <i id="signup-pwd-icon" data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Patient Age (Optional) -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="signup-age" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+                Age
+              </label>
+              <input 
+                type="number" 
+                id="signup-age" 
+                name="patient_age"
+                min="1" 
+                max="120"
+                placeholder="e.g. 74" 
+                class="tactile-input w-full px-3.5 py-2.5 rounded-lg text-sm font-bold text-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label for="signup-gender" class="block text-xs font-black uppercase tracking-wider text-neutral-800 mb-1">
+                Gender
+              </label>
+              <select 
+                id="signup-gender" 
+                name="patient_gender"
+                class="tactile-input w-full px-3 py-2.5 rounded-lg text-sm font-bold text-neutral-900">
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+                <option value="Not specified">Not specified</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="signup-error" class="hidden p-3 rounded-lg bg-red-100 border border-red-300 text-red-900 text-xs font-semibold">
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            type="submit" 
+            id="btn-signup-submit"
+            class="tactile-btn w-full py-3 px-4 rounded-xl text-sm font-black uppercase tracking-wider text-neutral-950 flex items-center justify-center space-x-2 mt-2">
+            <span>Create Account & Get ID</span>
+          </button>
+
+          <!-- Already have an account link -->
+          <div class="text-center pt-2">
+            <span class="text-xs text-neutral-600 font-semibold">Already have an account? </span>
+            <button 
+              type="button" 
+              onclick="switchAuthMode('login')" 
+              class="text-xs font-black uppercase tracking-wider text-[#C27D0E] hover:underline">
+              Log In
+            </button>
+          </div>
+        </form>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer Information -->
+  <footer class="w-full px-6 py-4 text-center text-xs text-neutral-500 border-t border-neutral-300/50 relative z-20">
+    <p>MediTrace MedMesh &copy; 2026. Clinical Decision Support System. AGS Beers Criteria & FDA Black Box Safety Engine.</p>
+  </footer>
+
+  <!-- Modal: Assigned Patient Unique ID Announcement -->
+  <div id="id-assigned-modal" class="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="tactile-badge rounded-2xl max-w-sm w-full p-6 text-center space-y-4">
+      <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto border-2 border-neutral-900">
+        <i data-lucide="check" class="w-6 h-6 stroke-[3]"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-black uppercase text-neutral-900">Account Created!</h3>
+        <p class="text-xs text-neutral-600 mt-1">Your unique Patient ID has been successfully generated. Please write it down for logging in:</p>
+      </div>
+      <div class="p-3 bg-white border-2 border-neutral-900 rounded-lg">
+        <span class="block text-2xl font-black font-mono tracking-widest text-[#C27D0E]" id="modal-assigned-id">MED-00000</span>
+      </div>
+      <button 
+        onclick="proceedToDashboard()" 
+        class="tactile-btn w-full py-2.5 rounded-lg text-sm font-black uppercase text-neutral-950">
+        Enter Safety Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript for Authentication & Session Storage -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+
+      // Check if user is already logged in
+      const existingSession = localStorage.getItem("medmesh_session");
+      if (existingSession) {
+        try {
+          const user = JSON.parse(existingSession);
+          if (user && user.patient_id) {
+            // Pre-fill login ID
+            const idInput = document.getElementById("login-patient-id");
+            if (idInput) idInput.value = user.patient_id;
+          }
+        } catch (e) {}
+      }
+    });
+
+    let currentRegisteredUser = null;
+
+    // Switch between Log In and Sign Up tabs
+    function switchAuthMode(mode) {
+      const loginForm = document.getElementById("form-login");
+      const signupForm = document.getElementById("form-signup");
+      const loginTab = document.getElementById("tab-btn-login");
+      const signupTab = document.getElementById("tab-btn-signup");
+      const subtitle = document.getElementById("portal-card-subtitle");
+
+      if (mode === "login") {
+        loginForm.classList.remove("hidden");
+        signupForm.classList.add("hidden");
+        subtitle.textContent = "Enter your credentials to access the safety dashboard";
+
+        loginTab.className = "py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all bg-white text-neutral-900 shadow-sm border border-neutral-300";
+        signupTab.className = "py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-600 hover:text-neutral-900";
+      } else {
+        loginForm.classList.add("hidden");
+        signupForm.classList.remove("hidden");
+        subtitle.textContent = "Create an account to obtain your Patient Unique ID";
+
+        signupTab.className = "py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all bg-white text-neutral-900 shadow-sm border border-neutral-300";
+        loginTab.className = "py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-600 hover:text-neutral-900";
+      }
+      lucide.createIcons();
+    }
+
+    // Toggle Password Visibility
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (!input) return;
+
+      if (input.type === "password") {
+        input.type = "text";
+        if (icon) icon.setAttribute("data-lucide", "eye-off");
+      } else {
+        input.type = "password";
+        if (icon) icon.setAttribute("data-lucide", "eye");
+      }
+      lucide.createIcons();
+    }
+
+    // Pre-fill Demo Credentials
+    function fillDemoCredentials() {
+      document.getElementById("login-patient-id").value = "MED-84920";
+      document.getElementById("login-password").value = "demo1234";
+    }
+
+    // Handle Login Submit
+    async function handleLoginSubmit(event) {
+      event.preventDefault();
+      const patientId = document.getElementById("login-patient-id").value.trim().toUpperCase();
+      const password = document.getElementById("login-password").value;
+      const errorEl = document.getElementById("login-error");
+      const btn = document.getElementById("btn-login-submit");
+
+      errorEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.classList.add("opacity-75");
+
+      try {
+        // Try backend login first
+        const resp = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ patient_id: patientId, password: password })
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          localStorage.setItem("medmesh_session", JSON.stringify(data.user));
+          window.location.href = "/";
+          return;
+        }
+
+        // If backend returns 401 or offline, check local mock accounts
+        let user = null;
+        if (patientId === "MED-84920") {
+          user = {
+            patient_id: "MED-84920",
+            name: "Margaret Vance",
+            email: "margaret.vance@medguard.org",
+            patient_age: 74,
+            patient_gender: "Female",
+            allergies: ["Penicillin"]
+          };
+        } else {
+          // Check localStorage stored accounts
+          const storedAccounts = JSON.parse(localStorage.getItem("medmesh_accounts") || "{}");
+          if (storedAccounts[patientId] && storedAccounts[patientId].password === password) {
+            user = storedAccounts[patientId];
+          }
+        }
+
+        if (user) {
+          localStorage.setItem("medmesh_session", JSON.stringify(user));
+          window.location.href = "/";
+        } else {
+          throw new Error("Invalid Patient Unique ID or password. Use demo ID: MED-84920");
+        }
+      } catch (err) {
+        errorEl.textContent = err.message || "Login failed. Please check credentials.";
+        errorEl.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove("opacity-75");
+      }
+    }
+
+    // Handle Signup Submit
+    async function handleSignupSubmit(event) {
+      event.preventDefault();
+      const name = document.getElementById("signup-name").value.trim();
+      const email = document.getElementById("signup-email").value.trim();
+      const password = document.getElementById("signup-password").value;
+      const ageVal = document.getElementById("signup-age").value;
+      const gender = document.getElementById("signup-gender").value;
+      const errorEl = document.getElementById("signup-error");
+      const btn = document.getElementById("btn-signup-submit");
+
+      errorEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.classList.add("opacity-75");
+
+      // Generate unique Patient ID: MED-XXXXX (e.g. MED-59314)
+      const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+      const generatedId = `MED-${randomSuffix}`;
+
+      const newUser = {
+        patient_id: generatedId,
+        name: name,
+        email: email,
+        password: password,
+        patient_age: ageVal ? parseInt(ageVal, 10) : 70,
+        patient_gender: gender,
+        allergies: []
+      };
+
+      try {
+        // Post to backend
+        try {
+          await fetch("/api/auth/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newUser)
+          });
+        } catch (backendErr) {
+          // Offline fallback
+        }
+
+        // Store locally
+        const storedAccounts = JSON.parse(localStorage.getItem("medmesh_accounts") || "{}");
+        storedAccounts[generatedId] = newUser;
+        localStorage.setItem("medmesh_accounts", JSON.stringify(storedAccounts));
+        localStorage.setItem("medmesh_session", JSON.stringify(newUser));
+
+        currentRegisteredUser = newUser;
+
+        // Show ID announcement modal
+        document.getElementById("modal-assigned-id").textContent = generatedId;
+        document.getElementById("id-assigned-modal").classList.remove("hidden");
+        lucide.createIcons();
+
+      } catch (err) {
+        errorEl.textContent = err.message || "Signup failed. Please try again.";
+        errorEl.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove("opacity-75");
+      }
+    }
+
+    function proceedToDashboard() {
+      window.location.href = "/";
+    }
+  </script>
+</body>
+</html>

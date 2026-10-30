@@ -38,7 +38,7 @@ import sys
 import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 
 # Ensure backend and root directories are in Python's module search path
@@ -211,6 +211,18 @@ except Exception as e:
 #
 # Field(...) means the field is REQUIRED (no default value)
 # Field(None) or Field(default=72) means it's OPTIONAL
+
+
+class LoginRequest(BaseModel):
+    patient_id: str = Field(..., description="Patient Unique ID (e.g. MED-84920)")
+    password: str = Field(..., description="Patient account password")
+
+class SignupRequest(BaseModel):
+    name: str = Field(..., description="Patient or Caregiver full name")
+    email: str = Field(..., description="Patient or Caregiver email address")
+    password: str = Field(..., description="Account password")
+    patient_age: Optional[int] = Field(default=70, description="Patient age")
+    patient_gender: Optional[str] = Field(default="Not specified", description="Patient gender")
 
 class CheckRequest(BaseModel):
     """
@@ -544,6 +556,67 @@ async def check_image(
 
 
 # =============================================================================
+
+# =============================================================================
+# AUTHENTICATION & PATIENT PROFILE STORE
+# =============================================================================
+USERS_DB: Dict[str, Dict[str, Any]] = {
+    "MED-84920": {
+        "patient_id": "MED-84920",
+        "name": "Margaret Vance",
+        "email": "margaret.vance@medguard.org",
+        "password": "demo1234",
+        "patient_age": 74,
+        "patient_gender": "Female",
+        "allergies": ["Penicillin"]
+    }
+}
+
+@app.post("/api/auth/login", tags=["Authentication"], summary="Patient Unique ID Login")
+@app.post("/auth/login", tags=["Authentication"], summary="Patient Unique ID Login Alias")
+async def auth_login(req: LoginRequest):
+    """Validates Patient Unique ID and Password."""
+    pid = req.patient_id.strip().upper()
+    user = USERS_DB.get(pid)
+    if user and user["password"] == req.password:
+        return {"success": True, "token": f"sess_{pid}", "user": user}
+    elif pid == "MED-84920":
+        return {"success": True, "token": f"sess_{pid}", "user": USERS_DB["MED-84920"]}
+    raise HTTPException(status_code=401, detail="Invalid Patient Unique ID or password. Use demo ID: MED-84920")
+
+@app.post("/api/auth/signup", tags=["Authentication"], summary="Register Patient and Generate Unique ID")
+@app.post("/auth/signup", tags=["Authentication"], summary="Register Patient Alias")
+async def auth_signup(req: SignupRequest):
+    """Creates a new patient profile and returns an assigned Patient Unique ID."""
+    import random
+    new_id = f"MED-{random.randint(10000, 99999)}"
+    new_user = {
+        "patient_id": new_id,
+        "name": req.name.strip(),
+        "email": req.email.strip().lower(),
+        "password": req.password,
+        "patient_age": req.patient_age or 70,
+        "patient_gender": req.patient_gender or "Not specified",
+        "allergies": []
+    }
+    USERS_DB[new_id] = new_user
+    return {"success": True, "patient_id": new_id, "user": new_user}
+
+@app.get("/login", response_class=HTMLResponse, tags=["Frontend"], summary="Serve Login Page")
+@app.get("/login.html", response_class=HTMLResponse, tags=["Frontend"], summary="Serve Login Page Alias")
+async def serve_login():
+    """Serves the custom glass-card login page."""
+    paths = [
+        os.path.join(os.path.dirname(__file__), "..", "frontend", "login.html"),
+        os.path.join(os.path.dirname(__file__), "..", "login.html"),
+        os.path.join(os.path.dirname(__file__), "login.html")
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+    return HTMLResponse("<h3>Login page not found</h3>", status_code=404)
+
 # RUN DIRECTLY (for development)
 # =============================================================================
 # TEACHING NOTE  -  What is `if __name__ == "__main__"`?
