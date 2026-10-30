@@ -20,6 +20,11 @@
             sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
           },
           colors: {
+            bitter: {
+              DEFAULT: '#3e3f16',
+              dark: '#2b2c0f',
+              hover: '#343512',
+            },
             olive: {
               DEFAULT: '#8A9A5B',
               dark: '#738249',
@@ -102,7 +107,7 @@
 
     /* Accessibility focus ring */
     :focus-visible {
-      outline: 3px solid rgba(13, 148, 136, 0.35);
+      outline: 3px solid rgba(62, 63, 22, 0.45);
       outline-offset: 2px;
     }
 
@@ -266,7 +271,7 @@
               <input type="text" id="allergy-input" placeholder="e.g. Aspirin, Penicillin" 
                 class="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder:text-neutral-400 focus:border-brand-600 transition-custom"
                 onkeydown="if(event.key === 'Enter') { event.preventDefault(); addAllergyFromInput(); }">
-              <button onclick="addAllergyFromInput()" class="px-3 py-2 text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg border border-neutral-300 transition-custom">Add</button>
+              <button onclick="addAllergyFromInput()" class="px-3.5 py-2 text-xs font-semibold bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded-lg transition-custom shadow-sm">Add</button>
             </div>
           </div>
         </div>
@@ -291,7 +296,7 @@
             <div>
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center space-x-2">
-                  <i data-lucide="pill" class="w-4 h-4 text-brand-600"></i>
+                  <i data-lucide="pill" class="w-4 h-4 text-[#3e3f16]"></i>
                   <h2 class="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Medicines Already In Use / Prescribed</h2>
                 </div>
                 <button onclick="clearAllMeds()" class="text-xs text-neutral-500 hover:text-neutral-900 transition-custom">Clear All</button>
@@ -301,11 +306,11 @@
               <div class="flex gap-2 mb-4">
                 <div class="relative flex-1">
                   <input type="text" id="med-input" placeholder="Enter medicine (e.g. Warfarin 5mg, Dolo 650, Telma 40)" 
-                    class="w-full px-3.5 py-2.5 text-sm bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder:text-neutral-400 focus:border-brand-600 transition-custom"
+                    class="w-full px-3.5 py-2.5 text-sm bg-white border border-neutral-300 rounded-lg text-neutral-900 placeholder:text-neutral-400 focus:border-[#3e3f16] transition-custom"
                     onkeydown="if(event.key === 'Enter') { event.preventDefault(); addMedicineFromInput(); }">
                 </div>
                 <button onclick="addMedicineFromInput()" 
-                  class="px-4 py-2.5 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-teal-dark transition-custom flex items-center space-x-1">
+                  class="px-5 py-2.5 text-sm font-semibold bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded-lg transition-custom shadow-sm flex items-center space-x-1">
                   <i data-lucide="plus" class="w-4 h-4"></i>
                   <span>Add</span>
                 </button>
@@ -325,9 +330,9 @@
 
             <!-- Parameters and Execution Button -->
             <div class="pt-6 mt-6 border-t border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-end gap-4">
-              <!-- Primary Audit Button -->
+              <!-- Primary Audit Button (Bitter Olive #3e3f16) -->
               <button id="btn-run-audit" onclick="runSafetyAudit()" 
-                class="px-6 py-2.5 bg-brand-600 hover:bg-brand-teal-dark text-white text-sm font-semibold rounded-lg shadow-sm transition-custom flex items-center justify-center space-x-2">
+                class="px-6 py-2.5 bg-[#3e3f16] hover:bg-[#2b2c0f] text-white text-sm font-semibold rounded-lg shadow-sm transition-custom flex items-center justify-center space-x-2">
                 <i data-lucide="shield-check" class="w-4 h-4" id="audit-btn-icon"></i>
                 <span id="audit-btn-text">Run Safety Audit</span>
               </button>
