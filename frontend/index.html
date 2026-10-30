@@ -729,6 +729,32 @@
                 <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/png,image/webp" multiple onchange="handleImageUpload(event)">
               </div>
 
+              <!-- Staged Prescription Files Container (Visible when files are added) -->
+              <div id="staged-files-section" class="hidden mt-4 space-y-3 p-3.5 rounded-xl bg-neutral-50 border border-neutral-200">
+                <div class="flex items-center justify-between pb-2 border-b border-neutral-200">
+                  <div class="flex items-center space-x-2">
+                    <i data-lucide="layers" class="w-4 h-4 text-[#758449]"></i>
+                    <span class="text-xs font-bold text-neutral-900" id="staged-files-count">0 Prescriptions Staged</span>
+                  </div>
+                  <button type="button" onclick="clearStagedFiles()" class="text-[11px] text-neutral-500 hover:text-red-700 font-semibold transition-custom">
+                    Clear All
+                  </button>
+                </div>
+
+                <!-- File Chips List -->
+                <div id="staged-files-list" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  <!-- Rendered dynamically -->
+                </div>
+
+                <!-- Action Button to Start Engine Extraction -->
+                <div class="pt-1">
+                  <button type="button" id="btn-start-extraction" onclick="startStagedExtraction()" class="w-full py-2.5 px-4 rounded-lg bg-[#3e3f16] hover:bg-[#2b2c0f] text-white text-xs font-semibold flex items-center justify-center space-x-2 transition-custom shadow-sm">
+                    <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                    <span id="btn-start-extraction-text">Start OCR Extraction</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- Uploading indicator -->
               <div id="upload-status" class="hidden mt-3 text-xs text-neutral-600 flex items-center space-x-2">
                 <div class="w-3.5 h-3.5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
@@ -1460,7 +1486,9 @@
       }
     }
 
-        // Multi-Prescription Drag and Drop & File Handlers
+            // Staged Prescription Files Management (First input all, then click start)
+    let stagedPrescriptionFiles = [];
+
     function handleDragOver(event) {
       event.preventDefault();
       const zone = document.getElementById("drop-zone");
@@ -1478,20 +1506,107 @@
       handleDragLeave(event);
       const files = event.dataTransfer.files;
       if (files && files.length > 0) {
-        processUploadedFiles(Array.from(files));
+        addStagedFiles(Array.from(files));
       }
     }
 
     function handleImageUpload(event) {
       const files = event.target.files;
       if (files && files.length > 0) {
-        processUploadedFiles(Array.from(files));
+        addStagedFiles(Array.from(files));
       }
       event.target.value = "";
     }
 
+    function addStagedFiles(newFiles) {
+      for (const f of newFiles) {
+        // Only accept images
+        if (f.type && !f.type.startsWith("image/")) continue;
+        // Avoid duplicate files
+        if (!stagedPrescriptionFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
+          stagedPrescriptionFiles.push(f);
+        }
+      }
+      renderStagedFiles();
+    }
+
+    function removeStagedFile(index) {
+      stagedPrescriptionFiles.splice(index, 1);
+      renderStagedFiles();
+    }
+
+    function clearStagedFiles() {
+      stagedPrescriptionFiles = [];
+      renderStagedFiles();
+    }
+
+    function renderStagedFiles() {
+      const section = document.getElementById("staged-files-section");
+      const list = document.getElementById("staged-files-list");
+      const countLabel = document.getElementById("staged-files-count");
+      const btnText = document.getElementById("btn-start-extraction-text");
+
+      if (stagedPrescriptionFiles.length === 0) {
+        if (section) section.classList.add("hidden");
+        return;
+      }
+
+      if (section) section.classList.remove("hidden");
+      if (countLabel) {
+        countLabel.textContent = stagedPrescriptionFiles.length === 1 
+          ? "1 Prescription Staged" 
+          : `${stagedPrescriptionFiles.length} Prescriptions Staged`;
+      }
+      if (btnText) {
+        btnText.textContent = stagedPrescriptionFiles.length === 1 
+          ? "Start OCR Extraction (1 File)" 
+          : `Start OCR Extraction (${stagedPrescriptionFiles.length} Files)`;
+      }
+
+      if (list) {
+        list.innerHTML = "";
+        stagedPrescriptionFiles.forEach((file, index) => {
+          const sizeKb = Math.round(file.size / 1024);
+          const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+
+          const item = document.createElement("div");
+          item.className = "flex items-center justify-between p-2 rounded-lg bg-white border border-neutral-200 text-xs shadow-xs";
+          item.innerHTML = `
+            <div class="flex items-center space-x-2 truncate">
+              <i data-lucide="image" class="w-3.5 h-3.5 text-neutral-500 flex-shrink-0"></i>
+              <span class="font-semibold text-neutral-800 truncate" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+              <span class="text-[10px] text-neutral-400 font-mono flex-shrink-0">(${sizeStr})</span>
+            </div>
+            <button type="button" onclick="removeStagedFile(${index})" class="text-neutral-400 hover:text-red-700 ml-2 p-0.5 rounded transition-custom" title="Remove file">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          `;
+          list.appendChild(item);
+        });
+      }
+
+      lucide.createIcons();
+    }
+
+    // Triggered when user explicitly clicks "Start OCR Extraction"
+    function startStagedExtraction() {
+      if (stagedPrescriptionFiles.length === 0) {
+        alert("Please add at least one prescription photo before starting extraction.");
+        return;
+      }
+      processUploadedFiles([...stagedPrescriptionFiles]);
+    }
+
     async function processUploadedFiles(files) {
       if (!files || files.length === 0) return;
+
+      const btn = document.getElementById("btn-start-extraction");
+      const btnText = document.getElementById("btn-start-extraction-text");
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add("opacity-75");
+      }
+      if (btnText) btnText.textContent = "Analyzing with Gemini Vision...";
 
       const statusEl = document.getElementById("upload-status");
       const statusText = document.getElementById("upload-status-text");
@@ -1528,6 +1643,8 @@
           renderChips();
           const fileCount = data.processed_files_count || files.length;
           statusText.textContent = `Extracted ${data.detected_medicines.length} medicine(s) from ${fileCount} prescription(s). (${newCount} new added)`;
+          // Clear staged files on successful extraction
+          clearStagedFiles();
         } else {
           statusText.textContent = data.message || "No legible medicines detected in uploaded photos. Please enter manually.";
         }
@@ -1535,9 +1652,14 @@
         statusText.textContent = "Multi-upload failed or server unreachable. Please enter manually.";
       } finally {
         setEngineRunning(false, "Standby - Ready to audit");
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove("opacity-75");
+        }
+        renderStagedFiles();
         setTimeout(() => {
           statusEl.classList.add("hidden");
-        }, 6000);
+        }, 7000);
       }
     }
 
