@@ -248,6 +248,11 @@ class NormalizeRequest(BaseModel):
 # =============================================================================
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
+@app.get("/api/index.py", response_class=HTMLResponse)
+@app.get("/index.html", response_class=HTMLResponse)
 async def serve_frontend():
     """
     Serve the frontend index.html at the root URL.
@@ -275,6 +280,7 @@ async def serve_frontend():
     summary="Health Check",
     description="Returns API status. Use this to verify the server is running."
 )
+@app.get("/api/health", tags=["System"], summary="Health Check Alias")
 async def health_check():
     """
     Simple health check endpoint.

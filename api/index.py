@@ -11,3 +11,4 @@ for path in [str(BACKEND_DIR), str(BASE_DIR)]:
         sys.path.insert(0, path)
 
 from backend.main import app
+
