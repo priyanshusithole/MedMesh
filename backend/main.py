@@ -34,6 +34,7 @@ TEACHING NOTE  -  What is "middleware"?
 """
 
 import os
+import asyncio
 import sys
 import logging
 from pathlib import Path
@@ -465,97 +466,103 @@ async def schedule_endpoint(request: CheckRequest):
 @app.post(
     "/api/check-image",
     tags=["Safety Engine"],
-    summary="Check Medication Safety from Prescription Photo",
+    summary="Check Medication Safety from Multiple Prescription Photos",
     description=(
-        "Upload a photo of a prescription slip, medicine strip, or pill bottle. "
-        "Gemini Vision extracts medicine names, which are presented as editable chips "
+        "Upload one or more photos of prescription slips, medicine strips, or pill bottles. "
+        "Gemini Vision extracts medicine names concurrently, which are presented as editable chips "
         "for user confirmation, then passed to the safety engine."
     )
 )
-@app.post("/check-image", tags=["Safety Engine"], summary="Check Medication Safety from Prescription Photo Alias")
+@app.post("/check-image", tags=["Safety Engine"], summary="Check Medication Safety from Prescription Photos Alias")
 async def check_image(
-    file: UploadFile = File(..., description="Prescription photo (JPEG, PNG, WebP)"),
+    file: Optional[UploadFile] = File(default=None, description="Single prescription photo (JPEG, PNG, WebP)"),
+    files: Optional[List[UploadFile]] = File(default=None, description="Multiple prescription photos (JPEG, PNG, WebP)"),
     patient_age: Optional[int] = Form(default=None, ge=0, le=110),
     explain: bool = Form(default=True)
 ):
     """
-    OCR pipeline endpoint for prescription photo uploads.
-
-    TEACHING NOTE  -  What is UploadFile?
-    FastAPI's UploadFile type handles multipart form data (file uploads).
-    When a user selects a photo in the browser, the browser sends it as
-    "multipart/form-data"  -  a special encoding for binary files.
-    UploadFile gives us the filename, content type, and raw bytes.
-
-    TEACHING NOTE  -  What is Form()?
-    When sending files, you can't use JSON body (JSON is text-only).
-    So additional fields like patient_age are sent as "form fields"
-    alongside the file. Form() tells FastAPI to read them from the form
-    data instead of the JSON body.
-
-    HUMAN-IN-THE-LOOP DESIGN:
-    We return {"detected_medicines": [...], "requires_confirmation": true}
-    The frontend shows these as EDITABLE CHIPS.
-    The user confirms/corrects them, THEN calls /api/check with the confirmed list.
-    This is the safety guardrail for doctor handwriting errors.
+    Multi-image OCR pipeline endpoint for prescription photo uploads.
+    Processes one or more uploaded prescription photos concurrently with Gemini Vision.
     """
-    logger.info(f"POST /api/check-image  -  file: {file.filename}, type: {file.content_type}")
+    upload_list: List[UploadFile] = []
+    if files:
+        upload_list.extend(files)
+    if file:
+        upload_list.append(file)
 
-    # Validate file type
+    if not upload_list:
+        raise HTTPException(
+            status_code=400,
+            detail="Please upload at least one prescription photo."
+        )
+
+    logger.info(f"POST /api/check-image  -  processing {len(upload_list)} prescription image(s)")
+
     allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
-    if file.content_type not in allowed_types:
+    max_size_bytes = 10 * 1024 * 1024  # 10MB per file
+
+    valid_tasks = []
+    for f in upload_list:
+        content_type = f.content_type or "image/jpeg"
+        if content_type not in allowed_types:
+            logger.warning(f"Skipping unsupported file type: {f.filename} ({content_type})")
+            continue
+
+        image_bytes = await f.read()
+        if len(image_bytes) == 0 or len(image_bytes) > max_size_bytes:
+            logger.warning(f"Skipping empty or oversized file: {f.filename} ({len(image_bytes)} bytes)")
+            continue
+
+        valid_tasks.append((image_bytes, content_type))
+
+    if not valid_tasks:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type: {file.content_type}. Please upload JPEG, PNG, or WebP."
+            detail="No valid prescription images provided. Please upload JPEG, PNG, or WebP files under 10MB."
         )
 
-    # Validate file size (max 10MB)
-    # TEACHING NOTE  -  read() loads entire file into memory as bytes
-    image_bytes = await file.read()
-    max_size_bytes = 10 * 1024 * 1024  # 10MB in bytes
-    if len(image_bytes) > max_size_bytes:
-        raise HTTPException(
-            status_code=400,
-            detail="Image file is too large. Maximum size is 10MB."
-        )
-
-    if len(image_bytes) == 0:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
-
-    # Extract medicine names using Gemini Vision
-    detected_medicines = await extract_medicines_from_image(
-        image_bytes,
-        mime_type=file.content_type or "image/jpeg"
+    # Concurrently analyze all uploaded prescription photos
+    results = await asyncio.gather(
+        *[extract_medicines_from_image(img_b, mime_type=m_type) for img_b, m_type in valid_tasks],
+        return_exceptions=True
     )
 
-    if not detected_medicines:
+    all_detected: List[str] = []
+    for r in results:
+        if isinstance(r, list):
+            for med in r:
+                clean_med = med.strip()
+                if clean_med and clean_med not in all_detected:
+                    all_detected.append(clean_med)
+        elif isinstance(r, Exception):
+            logger.error(f"Error during parallel prescription extraction: {r}")
+
+    if not all_detected:
         return {
             "success": False,
             "detected_medicines": [],
             "requires_confirmation": True,
+            "total_detected": 0,
+            "processed_files_count": len(valid_tasks),
             "message": (
-                "Could not extract medicine names from this image. "
-                "The image may be blurry or the text unclear. "
-                "Please try typing the medicine names manually."
+                f"Could not extract medicine names from the {len(valid_tasks)} uploaded image(s). "
+                f"The images may be blurry or handwriting unclear. Please try typing the medicine names manually."
             )
         }
 
-    # Return detected medicines for user confirmation
-    # The FRONTEND will show these as editable chips before running the check
     return {
         "success": True,
-        "detected_medicines": detected_medicines,
-        "requires_confirmation": True,  # Always require human review of OCR output
-        "total_detected": len(detected_medicines),
+        "detected_medicines": all_detected,
+        "requires_confirmation": True,
+        "total_detected": len(all_detected),
+        "processed_files_count": len(valid_tasks),
         "message": (
-            f"Found {len(detected_medicines)} possible medicines. "
+            f"Found {len(all_detected)} medicines across {len(valid_tasks)} prescription photo(s). "
             f"Please review and correct any errors before checking safety."
         ),
         "next_step": "Send confirmed list to POST /api/check with your corrections"
     }
 
-
-# =============================================================================
 
 # =============================================================================
 # AUTHENTICATION & PATIENT PROFILE STORE

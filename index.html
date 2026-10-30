@@ -716,14 +716,17 @@
               </div>
               <p class="text-xs text-neutral-600 mb-4">Upload a doctor prescription slip or medicine strip photo to extract medication names via Gemini Vision.</p>
 
-              <!-- Drag and drop zone -->
+              <!-- Drag and drop zone (Supports multiple prescriptions) -->
               <div id="drop-zone" 
-                class="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center bg-neutral-50 hover:bg-brand-50 hover:border-brand-600 transition-custom cursor-pointer flex flex-col items-center justify-center min-h-[160px]"
-                onclick="document.getElementById('file-input').click()">
+                class="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center bg-neutral-50 hover:bg-brand-50 hover:border-[#758449] transition-custom cursor-pointer flex flex-col items-center justify-center min-h-[160px]"
+                onclick="document.getElementById('file-input').click()"
+                ondragover="handleDragOver(event)"
+                ondragleave="handleDragLeave(event)"
+                ondrop="handleFileDrop(event)">
                 <i data-lucide="upload-cloud" class="w-8 h-8 text-neutral-400 mb-2"></i>
-                <span class="text-xs font-semibold text-neutral-800">Click to upload prescription</span>
-                <span class="text-[11px] text-neutral-500 mt-1">PNG, JPG, or WebP up to 10MB</span>
-                <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/png,image/webp" onchange="handleImageUpload(event)">
+                <span class="text-xs font-semibold text-neutral-800">Click or drag prescription photos</span>
+                <span class="text-[11px] text-neutral-500 mt-1">Upload 1 or more prescriptions simultaneously (PNG, JPG, WebP)</span>
+                <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/png,image/webp" multiple onchange="handleImageUpload(event)">
               </div>
 
               <!-- Uploading indicator -->
@@ -1457,19 +1460,53 @@
       }
     }
 
-    // Prescription Photo Upload handler
-    async function handleImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+        // Multi-Prescription Drag and Drop & File Handlers
+    function handleDragOver(event) {
+      event.preventDefault();
+      const zone = document.getElementById("drop-zone");
+      if (zone) zone.classList.add("border-[#758449]", "bg-emerald-50/50");
+    }
+
+    function handleDragLeave(event) {
+      event.preventDefault();
+      const zone = document.getElementById("drop-zone");
+      if (zone) zone.classList.remove("border-[#758449]", "bg-emerald-50/50");
+    }
+
+    function handleFileDrop(event) {
+      event.preventDefault();
+      handleDragLeave(event);
+      const files = event.dataTransfer.files;
+      if (files && files.length > 0) {
+        processUploadedFiles(Array.from(files));
+      }
+    }
+
+    function handleImageUpload(event) {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        processUploadedFiles(Array.from(files));
+      }
+      event.target.value = "";
+    }
+
+    async function processUploadedFiles(files) {
+      if (!files || files.length === 0) return;
 
       const statusEl = document.getElementById("upload-status");
       const statusText = document.getElementById("upload-status-text");
       statusEl.classList.remove("hidden");
-      statusText.textContent = `Analyzing ${file.name} with Gemini Vision...`;
-      setEngineRunning(true, "Gemini Vision OCR analyzing...");
+
+      const countMsg = files.length === 1 
+        ? "Analyzing 1 prescription photo with Gemini Vision..." 
+        : `Analyzing ${files.length} prescription photos simultaneously with Gemini Vision...`;
+      statusText.textContent = countMsg;
+      setEngineRunning(true, `Analyzing ${files.length} prescription(s)...`);
 
       const formData = new FormData();
-      formData.append("file", file);
+      files.forEach(f => {
+        formData.append("files", f);
+      });
       formData.append("patient_age", document.getElementById("patient-age-input").value);
       formData.append("explain", "true");
 
@@ -1481,25 +1518,30 @@
 
         const data = await response.json();
         if (data.detected_medicines && data.detected_medicines.length > 0) {
+          let newCount = 0;
           data.detected_medicines.forEach(m => {
-            if (!queuedMedicines.includes(m)) queuedMedicines.push(m);
+            if (!queuedMedicines.includes(m)) {
+              queuedMedicines.push(m);
+              newCount++;
+            }
           });
           renderChips();
-          statusText.textContent = `Extracted ${data.detected_medicines.length} medicine(s) for verification.`;
+          const fileCount = data.processed_files_count || files.length;
+          statusText.textContent = `Extracted ${data.detected_medicines.length} medicine(s) from ${fileCount} prescription(s). (${newCount} new added)`;
         } else {
-          statusText.textContent = data.message || "No legible medicines detected. Please enter manually.";
+          statusText.textContent = data.message || "No legible medicines detected in uploaded photos. Please enter manually.";
         }
       } catch (err) {
-        statusText.textContent = "Upload failed or server unreachable. Please enter manually.";
+        statusText.textContent = "Multi-upload failed or server unreachable. Please enter manually.";
       } finally {
-        setEngineRunning(false, "Standby  -  Ready to audit");
+        setEngineRunning(false, "Standby - Ready to audit");
         setTimeout(() => {
           statusEl.classList.add("hidden");
-        }, 5000);
+        }, 6000);
       }
     }
 
-    // Run Safety Audit with Allergy and Profile Data
+// Run Safety Audit with Allergy and Profile Data
     async function runSafetyAudit() {
       if (queuedMedicines.length === 0) {
         alert("Please enter at least one medication name to run the audit.");
