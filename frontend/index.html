@@ -1353,7 +1353,18 @@
     }
 
     // Render medication chips
+    function deduplicateQueuedMedicines() {
+      const seen = new Set();
+      queuedMedicines = queuedMedicines.filter(m => {
+        const key = (m || "").trim().toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
     function renderChips() {
+      deduplicateQueuedMedicines();
       const container = document.getElementById("chips-container");
       const countLabel = document.getElementById("med-count");
       countLabel.textContent = queuedMedicines.length;
@@ -1383,6 +1394,14 @@
       const input = document.getElementById("med-input");
       const name = input.value.trim();
       if (!name) return;
+
+      // Case-insensitive duplicate check
+      const alreadyExists = queuedMedicines.some(m => (m || "").trim().toLowerCase() === name.toLowerCase());
+      if (alreadyExists) {
+        input.value = "";
+        input.focus();
+        return;
+      }
 
       if (queuedMedicines.length >= 30) {
         alert("Maximum 30 medications allowed per audit batch.");
@@ -1685,15 +1704,22 @@
         const data = await response.json();
         if (data.detected_medicines && data.detected_medicines.length > 0) {
           let newCount = 0;
+          let dupCount = 0;
           data.detected_medicines.forEach(m => {
-            if (!queuedMedicines.includes(m)) {
-              queuedMedicines.push(m);
+            const trimmed = (m || "").trim();
+            if (!trimmed) return;
+            const exists = queuedMedicines.some(existing => (existing || "").trim().toLowerCase() === trimmed.toLowerCase());
+            if (!exists) {
+              queuedMedicines.push(trimmed);
               newCount++;
+            } else {
+              dupCount++;
             }
           });
           renderChips();
           const fileCount = data.processed_files_count || files.length;
-          statusText.textContent = `Extracted ${data.detected_medicines.length} medicine(s) from ${fileCount} prescription(s). (${newCount} new added)`;
+          const dupInfo = dupCount > 0 ? `, ${dupCount} duplicate(s) skipped` : "";
+          statusText.textContent = `Extracted ${data.detected_medicines.length} medicine(s) from ${fileCount} prescription(s). (${newCount} new added${dupInfo})`;
           // Clear staged files on successful extraction
           clearStagedFiles();
         } else {

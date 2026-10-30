@@ -348,7 +348,13 @@ async def normalize_endpoint(request: NormalizeRequest):
         raise HTTPException(status_code=400, detail="'names' list cannot be empty")
 
     # Filter out empty strings
-    clean_names = [n.strip() for n in request.names if n.strip()]
+    seen_lower = set()
+    clean_names = []
+    for n in request.names:
+        s = (n or "").strip()
+        if s and s.lower() not in seen_lower:
+            seen_lower.add(s.lower())
+            clean_names.append(s)
     if not clean_names:
         raise HTTPException(status_code=400, detail="All names were empty strings")
 
@@ -397,7 +403,13 @@ async def check_medications(request: CheckRequest):
     logger.info(f"POST /api/check  -  {len(request.names)} medicines, age: {request.patient_age}")
 
     # --- 1. Validate ----------------------------------------------------------
-    clean_names = [n.strip() for n in request.names if n.strip()]
+    seen_lower = set()
+    clean_names = []
+    for n in request.names:
+        s = (n or "").strip()
+        if s and s.lower() not in seen_lower:
+            seen_lower.add(s.lower())
+            clean_names.append(s)
     if not clean_names:
         raise HTTPException(
             status_code=400,
@@ -454,7 +466,13 @@ async def check_medications(request: CheckRequest):
 @app.post("/schedule", tags=["Safety Engine"], summary="Generate 24-Hour Dose Schedule Alias")
 async def schedule_endpoint(request: CheckRequest):
     """Generates an optimized 24-hour daily medication timetable."""
-    clean_names = [n.strip() for n in request.names if n.strip()]
+    seen_lower = set()
+    clean_names = []
+    for n in request.names:
+        s = (n or "").strip()
+        if s and s.lower() not in seen_lower:
+            seen_lower.add(s.lower())
+            clean_names.append(s)
     if not clean_names:
         raise HTTPException(status_code=400, detail="Please provide at least one medicine name.")
 
@@ -528,11 +546,13 @@ async def check_image(
     )
 
     all_detected: List[str] = []
+    seen_lower = set()
     for r in results:
         if isinstance(r, list):
             for med in r:
                 clean_med = med.strip()
-                if clean_med and clean_med not in all_detected:
+                if clean_med and clean_med.lower() not in seen_lower:
+                    seen_lower.add(clean_med.lower())
                     all_detected.append(clean_med)
         elif isinstance(r, Exception):
             logger.error(f"Error during parallel prescription extraction: {r}")
