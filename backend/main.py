@@ -617,6 +617,19 @@ async def serve_login():
                 return HTMLResponse(content=f.read())
     return HTMLResponse("<h3>Login page not found</h3>", status_code=404)
 
+
+@app.get("/assets/{filename:path}", tags=["Frontend"], summary="Serve Static Assets")
+async def serve_static_asset(filename: str):
+    for base in [
+        os.path.join(os.path.dirname(__file__), "..", "public", "assets"),
+        os.path.join(os.path.dirname(__file__), "..", "assets"),
+        os.path.join(os.path.dirname(__file__), "..", "frontend", "assets")
+    ]:
+        p = os.path.join(base, filename)
+        if os.path.exists(p) and os.path.isfile(p):
+            return FileResponse(p)
+    raise HTTPException(status_code=404, detail="Asset not found")
+
 # RUN DIRECTLY (for development)
 # =============================================================================
 # TEACHING NOTE  -  What is `if __name__ == "__main__"`?
