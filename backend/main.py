@@ -156,17 +156,20 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def vercel_path_rewrite_middleware(request, call_next):
+async def vercel_path_rewrite_middleware(request: Request, call_next):
     """
-    On Vercel, serverless rewrites point to api/index.py.
-    Vercel sets 'x-matched-path' with the true requested URL.
-    This middleware restores the path so FastAPI matches the correct route.
+    On Vercel, rewrites pass the target endpoint via the __path query parameter.
+    This middleware restores the exact endpoint path so FastAPI matches the correct route.
     """
-    matched_path = request.headers.get("x-matched-path")
-    current_path = request.scope.get("path", "")
-    if matched_path and ("index.py" in current_path or current_path in ["/api", "/api/"]):
-        clean_path = matched_path.split("?")[0]
-        request.scope["path"] = clean_path
+    subpath = request.query_params.get("__path")
+    if subpath:
+        clean_subpath = subpath.lstrip("/")
+        if clean_subpath in ["health", "docs", "openapi.json"]:
+            request.scope["path"] = f"/{clean_subpath}"
+        elif clean_subpath.startswith("api/"):
+            request.scope["path"] = f"/{clean_subpath}"
+        else:
+            request.scope["path"] = f"/api/{clean_subpath}"
     return await call_next(request)
 
 
@@ -549,18 +552,6 @@ async def check_image(
 # When you IMPORT a file (import main), __name__ = "main"
 # This block only runs when you execute: python main.py directly.
 # We prefer `uvicorn main:app --reload` but this is a convenience option.
-
-@app.api_route("/api/{full_path:path}", methods=["GET", "POST", "OPTIONS"])
-@app.api_route("/{full_path:path}", methods=["GET", "POST", "OPTIONS"])
-async def debug_catchall(request: Request, full_path: str = ""):
-    return {
-        "status": "unmatched_route",
-        "method": request.method,
-        "scope_path": request.scope.get("path"),
-        "full_path": full_path,
-        "x_matched_path": request.headers.get("x-matched-path"),
-        "raw_path": str(request.url)
-    }
 
 if __name__ == "__main__":
     import uvicorn

@@ -11,3 +11,4 @@ for p in [str(_BACKEND), str(_ROOT)]:
         sys.path.insert(0, p)
 
 from backend.main import app
+
