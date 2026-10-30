@@ -1,34 +1,34 @@
 """
-explainer.py — AI Plain-English Explanation Layer
+explainer.py  -  AI Plain-English Explanation Layer
 =================================================
 Purpose: Take a structured finding (from interactions.py) and generate
 a warm, clear, jargon-free explanation for a non-medical caregiver.
 
 CRITICAL ARCHITECTURAL RULE:
   The LLM (Gemini) is given the FACTS from our engine and asked to
-  REPHRASE them — it is NEVER asked whether two drugs interact.
+  REPHRASE them  -  it is NEVER asked whether two drugs interact.
   All medical facts come from our curated dataset.
   The model only provides compassionate language.
 
   "Facts from data, words from the model."
 
 TWO-PATH DESIGN:
-  Path A — Gemini API available:
-    → Pass the finding to Gemini Flash → get warm plain-English text
-    → Append to the finding as "detail_plain" field
-  Path B — Gemini API unavailable (no key, timeout, rate limit):
-    → Use deterministic template strings → still a good experience
-    → App NEVER crashes due to AI failure
+  Path A  -  Gemini API available:
+      Pass the finding to Gemini Flash   get warm plain-English text
+      Append to the finding as "detail_plain" field
+  Path B  -  Gemini API unavailable (no key, timeout, rate limit):
+      Use deterministic template strings   still a good experience
+      App NEVER crashes due to AI failure
 
-TEACHING NOTE — What is an "API key"?
+TEACHING NOTE  -  What is an "API key"?
   When you use Google's Gemini (or OpenAI, etc.), you authenticate
-  yourself with a secret "API key" — a long random string that proves
+  yourself with a secret "API key"  -  a long random string that proves
   who you are and allows Google to track/bill usage.
   We store it in an environment variable (not in code) for security.
   Why NOT in code? If you commit your API key to GitHub, it's PUBLIC.
   Anyone can find it, use it, and your account gets charged.
 
-TEACHING NOTE — What is an "environment variable"?
+TEACHING NOTE  -  What is an "environment variable"?
   A key-value pair stored in the operating system's memory.
   Example: GEMINI_API_KEY=AIzaSy...
   Python reads it with: os.environ.get("GEMINI_API_KEY")
@@ -52,12 +52,12 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # We initialize the Gemini client once at module startup.
 # If the API key is missing, _gemini_model stays None and we fall back
-# to templates automatically — no crash, no ugly error message.
+# to templates automatically  -  no crash, no ugly error message.
 
 # Multi-model fallback pool: if one model's quota is reached, automatically failover to the next
 _MODEL_POOL = [
-    "gemini-3.5-flash",
-    "gemini-3.7-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest",
     "gemini-3.1-flash-lite",
     "gemini-3.8-flash"
 ]
@@ -119,7 +119,7 @@ def _initialize_gemini():
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         logger.warning(
-            "GEMINI_API_KEY not set — AI explanations will use template fallback. "
+            "GEMINI_API_KEY not set  -  AI explanations will use template fallback. "
             "Set the environment variable to enable Gemini-powered explanations."
         )
 
@@ -164,9 +164,9 @@ def _template_explanation(finding: dict) -> str:
         context = ""
 
     urgency = {
-        "high": "⚠️ This is a HIGH-PRIORITY concern. Please contact your doctor or pharmacist TODAY before taking these medicines together.",
-        "moderate": "📋 This concern is worth discussing with your pharmacist or doctor at your next visit.",
-        "low": "ℹ️ This is a low-level caution. Mention it to your doctor or pharmacist when you have an opportunity."
+        "high": "  This is a HIGH-PRIORITY concern. Please contact your doctor or pharmacist TODAY before taking these medicines together.",
+        "moderate": "  This concern is worth discussing with your pharmacist or doctor at your next visit.",
+        "low": "  This is a low-level caution. Mention it to your doctor or pharmacist when you have an opportunity."
     }.get(severity, "Please discuss this with your doctor or pharmacist.")
 
     return f"{context}{detail} {urgency}"
@@ -181,12 +181,12 @@ _SYSTEM_PROMPT = """You are a compassionate medical communication assistant help
 Your role: Take a structured medical finding and rewrite the explanation in warm, clear, plain English that a non-medical family member caring for an elderly parent can understand.
 
 Rules you MUST follow:
-1. DO NOT invent any new medical claims — only rephrase the information provided.
+1. DO NOT invent any new medical claims  -  only rephrase the information provided.
 2. Keep your response to 2-3 sentences maximum.
 3. Always end with a gentle call to action (e.g., "Please show this to a pharmacist").
-4. Use simple everyday language — no Latin terms, no jargon.
+4. Use simple everyday language  -  no Latin terms, no jargon.
 5. Be warm and reassuring in tone, not alarming.
-6. Never say the combination is "definitely dangerous" — say "may cause" or "can increase risk of".
+6. Never say the combination is "definitely dangerous"  -  say "may cause" or "can increase risk of".
 7. Do not give dosing advice.
 """
 
@@ -218,12 +218,12 @@ async def explain_all_findings(findings: list[dict]) -> list[dict]:
     Add plain-English explanations to all findings.
 
     Modifies each finding dict in-place by adding a "detail_plain" key.
-    This is the ONLY new key we add — we never modify the clinical facts.
+    This is the ONLY new key we add  -  we never modify the clinical facts.
 
-    TEACHING NOTE — asyncio.gather() for concurrent AI calls:
+    TEACHING NOTE  -  asyncio.gather() for concurrent AI calls:
     If we have 5 findings and each Gemini call takes 1 second, doing
     them sequentially would take 5 seconds. With asyncio.gather(), all
-    5 calls run concurrently — total time ≈ 1 second.
+    5 calls run concurrently  -  total time   1 second.
 
     Args:
         findings: list of finding dicts from run_safety_engine()
@@ -253,7 +253,7 @@ async def explain_all_findings(findings: list[dict]) -> list[dict]:
 
 
 # =============================================================================
-# IMAGE / OCR UTILITY (for Stage 5 — Photo Prescription Scan)
+# IMAGE / OCR UTILITY (for Stage 5  -  Photo Prescription Scan)
 # =============================================================================
 
 async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> list[str]:
@@ -264,7 +264,7 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
     """
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        logger.warning("GEMINI_API_KEY not configured — cannot perform image OCR")
+        logger.warning("GEMINI_API_KEY not configured  -  cannot perform image OCR")
         return []
 
     try:
@@ -273,6 +273,9 @@ async def extract_medicines_from_image(image_bytes: bytes, mime_type: str = "ima
 
         try:
             pil_image = Image.open(io.BytesIO(image_bytes))
+            # Downscale oversized camera photos to 1600px max dimension for fast OCR
+            if pil_image.width > 1600 or pil_image.height > 1600:
+                pil_image.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
         except Exception as img_err:
             logger.warning(f"PIL Image conversion error: {img_err}")
             pil_image = None
@@ -298,7 +301,7 @@ If none are found, return NONE."""
 
         medicines = []
         for line in raw_text.split("\n"):
-            clean = line.strip().lstrip("•-*123456789. ").strip()
+            clean = line.strip().lstrip("*-*123456789. ").strip()
             clean = clean.replace("**", "").replace("*", "").strip()
             # Remove dosage form prefixes
             for prefix in ["tab.", "tab ", "cap.", "cap ", "syr.", "syr ", "inj.", "inj "]:
