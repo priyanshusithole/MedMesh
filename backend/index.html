@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MediTrace — Prescription Safety & Timing Intelligence</title>
+  <title>MediTrace  -  Prescription Safety & Timing Intelligence</title>
   
   <!-- Inter Font Family -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,6 +73,354 @@
         }
       }
     }
+
+    // =========================================================================
+    // 24-HOUR DOSE SCHEDULE & TAB NAVIGATION CONTROLLER
+    // =========================================================================
+
+    function switchMainTab(tab) {
+      activeMainTab = tab;
+      const viewAudit = document.getElementById("view-audit");
+      const viewSchedule = document.getElementById("view-schedule");
+      const btnAudit = document.getElementById("nav-btn-audit");
+      const btnSchedule = document.getElementById("nav-btn-schedule");
+
+      if (tab === "audit") {
+        viewAudit.classList.remove("hidden");
+        viewSchedule.classList.add("hidden");
+
+        // Styling for active audit button
+        btnAudit.className = "w-full flex items-center px-3 py-2.5 rounded-md text-sm font-semibold bg-[#758449] text-white border-l-4 border-white transition-custom shadow-sm text-left";
+        btnSchedule.className = "w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom text-left border-l-4 border-transparent";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (tab === "schedule") {
+        viewAudit.classList.add("hidden");
+        viewSchedule.classList.remove("hidden");
+
+        // Styling for active schedule button
+        btnSchedule.className = "w-full flex items-center px-3 py-2.5 rounded-md text-sm font-semibold bg-[#758449] text-white border-l-4 border-white transition-custom shadow-sm text-left";
+        btnAudit.className = "w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom text-left border-l-4 border-transparent";
+
+        // Sync patient info
+        updateSchedulePatientDisplay();
+
+        // Check if we need to load or generate schedule
+        if (currentScheduleData && currentScheduleData.total_scheduled > 0) {
+          renderDedicatedSchedule(currentScheduleData);
+        } else if (lastAuditReport && lastAuditReport.schedule && lastAuditReport.schedule.total_scheduled > 0) {
+          currentScheduleData = lastAuditReport.schedule;
+          renderDedicatedSchedule(currentScheduleData);
+        } else if (queuedMedicines.length > 0) {
+          fetchOrGenerateSchedule();
+        } else {
+          renderDedicatedSchedule(null);
+        }
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      lucide.createIcons();
+    }
+
+    function updateSchedulePatientDisplay() {
+      const disp = document.getElementById("schedule-patient-display");
+      if (!disp) return;
+      const name = patientProfile.name && patientProfile.name !== "Anonymous Patient" ? patientProfile.name : "";
+      const age = patientProfile.age ? `Age ${patientProfile.age}` : "";
+      const count = queuedMedicines.length > 0 ? `${queuedMedicines.length} Prescriptions` : "No Active Regimen";
+
+      if (name || age) {
+        disp.textContent = [name, age, count].filter(Boolean).join(" | ");
+      } else {
+        disp.textContent = `Senior Care Profile | ${count}`;
+      }
+    }
+
+    async function fetchOrGenerateSchedule() {
+      if (queuedMedicines.length === 0) {
+        renderDedicatedSchedule(null);
+        return;
+      }
+
+      setEngineRunning(true);
+      try {
+        const response = await fetch("/api/schedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            names: queuedMedicines,
+            patient_age: patientProfile.age,
+            patient_name: patientProfile.name,
+            patient_gender: patientProfile.gender,
+            allergies: patientProfile.allergies
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to compute 24-hour dose schedule");
+        }
+
+        const data = await response.json();
+        currentScheduleData = data;
+        renderDedicatedSchedule(data);
+      } catch (err) {
+        console.error("Schedule error:", err);
+        // Fallback local scheduling if offline
+        generateFallbackScheduleLocally();
+      } finally {
+        setEngineRunning(false);
+      }
+    }
+
+    function recalculateSchedule() {
+      if (queuedMedicines.length === 0) {
+        alert("Please add medicines to your regimen first or load the demo senior regimen.");
+        return;
+      }
+      fetchOrGenerateSchedule();
+    }
+
+    function handlePrintAction() {
+      window.print();
+    }
+
+    // Render the Dedicated 4-Slot View with Caregiver Tracking Checkboxes
+    function renderDedicatedSchedule(data) {
+      const emptyState = document.getElementById("schedule-empty-state");
+      const gridContainer = document.getElementById("schedule-grid-container");
+      const trackerCard = document.getElementById("schedule-tracker-card");
+
+      if (!data || !data.schedule || data.total_scheduled === 0) {
+        if (emptyState) emptyState.classList.remove("hidden");
+        if (gridContainer) gridContainer.classList.add("hidden");
+        if (trackerCard) trackerCard.classList.add("hidden");
+        return;
+      }
+
+      if (emptyState) emptyState.classList.add("hidden");
+      if (gridContainer) gridContainer.classList.remove("hidden");
+      if (trackerCard) trackerCard.classList.remove("hidden");
+
+      const slots = ["morning", "afternoon", "evening", "bedtime"];
+
+      slots.forEach(slotKey => {
+        const container = document.getElementById(`dedicated-slot-${slotKey}`);
+        if (!container) return;
+
+        const slotInfo = data.schedule[slotKey];
+        if (!slotInfo || !slotInfo.medicines || slotInfo.medicines.length === 0) {
+          container.innerHTML = '<span class="text-xs text-neutral-400 italic block py-6 text-center">No medications scheduled for this window</span>';
+        } else {
+          container.innerHTML = "";
+          slotInfo.medicines.forEach((med, idx) => {
+            const doseId = `${slotKey}_${idx}`;
+            const state = doseAdministeredState[doseId] || { administered: false, timeStr: "" };
+            const isChecked = state.administered;
+
+            const card = document.createElement("div");
+            card.id = `dose-card-${doseId}`;
+            card.className = `p-3 rounded-lg border text-xs space-y-2 transition-all shadow-sm ${
+              isChecked ? "bg-emerald-50/70 border-emerald-300" : "bg-neutral-50/70 border-neutral-200 hover:border-neutral-300"
+            }`;
+
+            card.innerHTML = `
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="font-bold text-neutral-900 ${isChecked ? "line-through text-neutral-500" : ""}" id="dose-title-${doseId}">${escapeHtml(med.name)}</div>
+                  <div class="text-[10px] text-neutral-500 font-mono mt-0.5">${escapeHtml(med.ingredient || "Active Salt")}</div>
+                </div>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                  isChecked ? "bg-emerald-200 text-emerald-900" : "bg-neutral-200 text-neutral-700"
+                }" id="dose-badge-${doseId}">
+                  ${isChecked ? "Administered" : "Scheduled"}
+                </span>
+              </div>
+              <div class="text-[11px] text-teal-900 font-medium bg-white/80 px-2 py-1 rounded border border-neutral-200/60">
+                ${escapeHtml(med.tip || "Take as directed with water.")}
+              </div>
+              <label class="flex items-center space-x-2 pt-1.5 border-t border-neutral-200/80 cursor-pointer select-none">
+                <input type="checkbox" id="dose-chk-${doseId}" onchange="toggleDoseAdministered('${slotKey}', ${idx}, this.checked)" ${isChecked ? "checked" : ""} class="w-4 h-4 rounded text-[#758449] focus:ring-[#758449] border-neutral-300">
+                <span class="text-[11px] font-medium text-neutral-700" id="dose-label-${doseId}">
+                  ${isChecked ? `Given at ${state.timeStr}` : "Mark as Given"}
+                </span>
+              </label>
+            `;
+            container.appendChild(card);
+          });
+        }
+      });
+
+      updateAdherenceStats(data);
+      lucide.createIcons();
+    }
+
+    // Toggle Caregiver Dose Checkbox
+    function toggleDoseAdministered(slotKey, idx, isChecked) {
+      const doseId = `${slotKey}_${idx}`;
+      const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      doseAdministeredState[doseId] = {
+        administered: isChecked,
+        timeStr: isChecked ? nowStr : ""
+      };
+
+      const card = document.getElementById(`dose-card-${doseId}`);
+      const title = document.getElementById(`dose-title-${doseId}`);
+      const badge = document.getElementById(`dose-badge-${doseId}`);
+      const label = document.getElementById(`dose-label-${doseId}`);
+
+      if (card && title && badge && label) {
+        if (isChecked) {
+          card.className = "p-3 rounded-lg border text-xs space-y-2 transition-all shadow-sm bg-emerald-50/70 border-emerald-300";
+          title.classList.add("line-through", "text-neutral-500");
+          badge.className = "px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-200 text-emerald-900";
+          badge.textContent = "Administered";
+          label.textContent = `Given at ${nowStr}`;
+        } else {
+          card.className = "p-3 rounded-lg border text-xs space-y-2 transition-all shadow-sm bg-neutral-50/70 border-neutral-200 hover:border-neutral-300";
+          title.classList.remove("line-through", "text-neutral-500");
+          badge.className = "px-1.5 py-0.5 rounded text-[10px] font-semibold bg-neutral-200 text-neutral-700";
+          badge.textContent = "Scheduled";
+          label.textContent = "Mark as Given";
+        }
+      }
+
+      if (currentScheduleData) {
+        updateAdherenceStats(currentScheduleData);
+      }
+    }
+
+    // Update Adherence Progress Bar & Counter
+    function updateAdherenceStats(data) {
+      let totalDoses = 0;
+      let administeredCount = 0;
+
+      const slots = ["morning", "afternoon", "evening", "bedtime"];
+      slots.forEach(slotKey => {
+        const meds = (data.schedule && data.schedule[slotKey] && data.schedule[slotKey].medicines) || [];
+        meds.forEach((m, idx) => {
+          totalDoses++;
+          const doseId = `${slotKey}_${idx}`;
+          if (doseAdministeredState[doseId] && doseAdministeredState[doseId].administered) {
+            administeredCount++;
+          }
+        });
+      });
+
+      const counter = document.getElementById("adherence-counter");
+      const pctLabel = document.getElementById("adherence-pct");
+      const bar = document.getElementById("adherence-progress-bar");
+      const badge = document.getElementById("adherence-status-badge");
+
+      if (totalDoses === 0) {
+        if (counter) counter.textContent = "0 / 0 doses administered";
+        if (pctLabel) pctLabel.textContent = "0% Completed";
+        if (bar) bar.style.width = "0%";
+        return;
+      }
+
+      const pct = Math.round((administeredCount / totalDoses) * 100);
+      if (counter) counter.textContent = `${administeredCount} / ${totalDoses} doses administered`;
+      if (pctLabel) pctLabel.textContent = `${pct}% Completed`;
+      if (bar) bar.style.width = `${pct}%`;
+
+      if (badge) {
+        if (pct === 100) {
+          badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200";
+          badge.textContent = "Fully Completed";
+        } else if (pct > 0) {
+          badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200";
+          badge.textContent = "In Progress";
+        } else {
+          badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-neutral-100 text-neutral-700 border border-neutral-200";
+          badge.textContent = "Pending";
+        }
+      }
+    }
+
+    // Reset Checklist for a New Day
+    function resetAdherenceChecklist() {
+      doseAdministeredState = {};
+      if (currentScheduleData) {
+        renderDedicatedSchedule(currentScheduleData);
+      }
+    }
+
+    // One-Click Demo Regimen for Geriatric Polypharmacy Chronotherapy
+    function loadScheduleDemoRegimen() {
+      const demoMeds = [
+        "Furosemide 40mg",
+        "Pantoprazole 40mg",
+        "Calcium Carbonate 500mg",
+        "Metformin 500mg",
+        "Atorvastatin 20mg"
+      ];
+
+      queuedMedicines = [...demoMeds];
+      patientProfile.name = "Margaret Vance";
+      patientProfile.age = 74;
+      patientProfile.gender = "Female";
+
+      // Update input fields
+      const nameInput = document.getElementById("patient-name-input");
+      const ageInput = document.getElementById("patient-age-input");
+      const genderInput = document.getElementById("patient-gender-input");
+      if (nameInput) nameInput.value = patientProfile.name;
+      if (ageInput) ageInput.value = patientProfile.age;
+      if (genderInput) genderInput.value = patientProfile.gender;
+
+      updatePatientContext();
+      renderChips();
+      fetchOrGenerateSchedule();
+    }
+
+    // Fallback local scheduling in case backend call fails
+    function generateFallbackScheduleLocally() {
+      const fallback = {
+        schedule: {
+          morning: { label: "Morning", time: "8:00 AM (Breakfast)", medicines: [] },
+          afternoon: { label: "Afternoon", time: "1:00 PM (Lunch)", medicines: [] },
+          evening: { label: "Evening", time: "7:00 PM (Dinner)", medicines: [] },
+          bedtime: { label: "Bedtime", time: "10:00 PM (Bedtime)", medicines: [] }
+        },
+        total_scheduled: queuedMedicines.length
+      };
+
+      queuedMedicines.forEach(name => {
+        const lower = name.toLowerCase();
+        let slot = "morning";
+        let tip = "Take with water after breakfast";
+
+        if (lower.includes("furosemide") || lower.includes("lasix")) {
+          slot = "morning";
+          tip = "Strict morning diuretic: avoids nighttime waking falls.";
+        } else if (lower.includes("pantoprazole") || lower.includes("omeprazole")) {
+          slot = "morning";
+          tip = "Take 30 mins before breakfast on empty stomach.";
+        } else if (lower.includes("calcium") || lower.includes("iron")) {
+          slot = "afternoon";
+          tip = "Chelation separation: take with lunch, 4h away from morning meds.";
+        } else if (lower.includes("metformin")) {
+          slot = "afternoon";
+          tip = "Take with lunch meal to prevent stomach upset.";
+        } else if (lower.includes("statin") || lower.includes("atorvastatin") || lower.includes("simvastatin")) {
+          slot = "bedtime";
+          tip = "Circadian statin timing: peak midnight cholesterol synthesis.";
+        } else if (lower.includes("zolpidem") || lower.includes("sleep")) {
+          slot = "bedtime";
+          tip = "Take immediately before sleep in bed.";
+        }
+
+        fallback.schedule[slot].medicines.push({
+          name: name,
+          ingredient: name.split(" ")[0].toLowerCase(),
+          tip: tip
+        });
+      });
+
+      currentScheduleData = fallback;
+      renderDedicatedSchedule(fallback);
+    }
+
   </script>
 
   <!-- Lucide Icons Library -->
@@ -157,18 +505,18 @@
       </div>
 
       <!-- Navigation Links -->
-      <nav class="p-3 space-y-1">
-        <a href="#audit" class="flex items-center px-3 py-2.5 rounded-md text-sm font-semibold bg-[#758449] text-white border-l-4 border-white transition-custom shadow-sm">
+      <nav class="p-3 space-y-1.5" id="sidebar-nav">
+        <button id="nav-btn-audit" onclick="switchMainTab('audit')" class="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-semibold bg-[#758449] text-white border-l-4 border-white transition-custom shadow-sm text-left">
           <i data-lucide="clipboard-check" class="w-4 h-4 mr-3 text-white"></i>
-          Prescription Audit
-        </a>
-        <a href="#schedule-section-anchor" class="flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom">
+          <span>Prescription Audit</span>
+        </button>
+        <button id="nav-btn-schedule" onclick="switchMainTab('schedule')" class="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom text-left border-l-4 border-transparent">
           <i data-lucide="clock" class="w-4 h-4 mr-3 text-emerald-100"></i>
-          24-Hour Dose Schedule
-        </a>
-        <button onclick="window.print()" class="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom text-left">
+          <span>24-Hour Dose Schedule</span>
+        </button>
+        <button onclick="handlePrintAction()" class="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-emerald-50 hover:bg-[#7D8C52] hover:text-white transition-custom text-left border-l-4 border-transparent">
           <i data-lucide="printer" class="w-4 h-4 mr-3 text-emerald-100"></i>
-          Print Clinician Handout
+          <span>Print Schedule / Handout</span>
         </button>
       </nav>
     </div>
@@ -208,7 +556,10 @@
     </header>
 
     <!-- Main Scrollable Content Container -->
-    <main class="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8" id="app-main-container">
+    <main class="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto" id="app-main-container">
+      
+      <!-- VIEW 1: PRESCRIPTION SAFETY AUDIT -->
+      <div id="view-audit" class="space-y-8">
       
       <!-- Page Title & Clinical Subtitle -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -499,9 +850,15 @@
                 </div>
                 <p class="text-xs text-neutral-600 mt-0.5">Daily time slots optimized to avoid spacing conflicts and nighttime fall hazards.</p>
               </div>
-              <span class="text-xs text-teal-800 bg-brand-50 px-3 py-1 rounded border border-brand-100 font-medium">
-                Conflict-Spaced Regimen
-              </span>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-teal-800 bg-brand-50 px-3 py-1 rounded border border-brand-100 font-medium">
+                  Conflict-Spaced Regimen
+                </span>
+                <button onclick="switchMainTab('schedule')" class="px-3 py-1 bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded text-xs font-semibold flex items-center space-x-1.5 transition-custom shadow-sm">
+                  <span>Open Full Tracker</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
             </div>
 
             <!-- 4 Time Slot Columns Grid -->
@@ -574,6 +931,255 @@
         </div>
 
       </div>
+      </div><!-- End VIEW 1: view-audit -->
+
+      <!-- VIEW 2: 24-HOUR CHRONOLOGICAL DOSE SCHEDULE (Dedicated Interactive View) -->
+      <div id="view-schedule" class="hidden space-y-8">
+        
+        <!-- Schedule Header Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Geriatric Chronotherapy Protocol
+              </span>
+              <span class="text-xs text-neutral-500" id="schedule-patient-display">Senior Care Profile</span>
+            </div>
+            <h1 class="text-2xl font-bold text-neutral-950 tracking-tight mt-1">24-Hour Chronological Dose Schedule</h1>
+            <p class="text-sm text-neutral-600 mt-1">
+              Precision timing grid preventing nighttime falls (nocturia), chelation binding absorption blocks, and peak circadian statin delivery.
+            </p>
+          </div>
+
+          <!-- Schedule View Quick Actions -->
+          <div class="flex items-center space-x-2 no-print">
+            <button onclick="recalculateSchedule()" class="px-3.5 py-2 border border-neutral-300 rounded-lg text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-custom flex items-center space-x-1.5 shadow-sm">
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-neutral-600"></i>
+              <span>Recalculate Timing</span>
+            </button>
+            <button onclick="window.print()" class="px-3.5 py-2 bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded-lg text-xs font-semibold transition-custom flex items-center space-x-1.5 shadow-sm">
+              <i data-lucide="printer" class="w-3.5 h-3.5 text-white"></i>
+              <span>Print Daily Schedule</span>
+            </button>
+            <button onclick="switchMainTab('audit')" class="px-3 py-2 border border-neutral-300 rounded-lg text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-custom flex items-center space-x-1 shadow-sm">
+              <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-neutral-600"></i>
+              <span>Audit View</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Caregiver Daily Adherence Tracker Card -->
+        <div id="schedule-tracker-card" class="bg-white rounded-xl p-5 border border-neutral-200 shadow-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-[#3e3f16]"></i>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-neutral-900">Caregiver Daily Adherence Tracker</h3>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-50 text-brand-900 border border-brand-100" id="adherence-status-badge">In Progress</span>
+              </div>
+              <p class="text-xs text-neutral-500">Check off each medication once administered to the senior patient today.</p>
+            </div>
+
+            <div class="flex items-center space-x-4">
+              <div class="text-right">
+                <span class="text-sm font-bold text-neutral-900 block" id="adherence-counter">0 / 0 doses administered</span>
+                <span class="text-[11px] text-neutral-500 font-medium" id="adherence-pct">0% Completed</span>
+              </div>
+              <button onclick="resetAdherenceChecklist()" class="px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:text-red-700 hover:bg-neutral-100 rounded border border-neutral-200 transition-custom" title="Reset checklist for a new day">
+                Reset Today
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="w-full bg-neutral-100 rounded-full h-2.5 mt-4 overflow-hidden border border-neutral-200">
+            <div id="adherence-progress-bar" class="bg-[#758449] h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Empty State Display (When no medicines loaded) -->
+        <div id="schedule-empty-state" class="hidden bg-white rounded-xl p-10 border border-dashed border-neutral-300 text-center space-y-4 shadow-sm">
+          <div class="w-14 h-14 rounded-full bg-neutral-100 text-neutral-500 flex items-center justify-center mx-auto">
+            <i data-lucide="calendar-clock" class="w-7 h-7"></i>
+          </div>
+          <div class="max-w-md mx-auto space-y-1.5">
+            <h3 class="text-base font-bold text-neutral-900">No Medications Scheduled Yet</h3>
+            <p class="text-xs text-neutral-600 leading-relaxed">
+              Add your patient's medications in the Prescription Audit or load a representative senior polypharmacy regimen below to automatically generate their safe 24-hour dose timetable.
+            </p>
+          </div>
+          <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+            <button onclick="loadScheduleDemoRegimen()" class="px-4 py-2 bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-custom shadow-sm">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>Load Sample Senior Regimen (5 Meds)</span>
+            </button>
+            <button onclick="switchMainTab('audit')" class="px-4 py-2 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-custom">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Enter Medicines Manually</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4-Slot Dedicated Chronological Timetable Grid -->
+        <div id="schedule-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+
+          <!-- Morning Slot (8:00 AM) -->
+          <div class="bg-white rounded-xl border border-neutral-200 shadow-card p-5 flex flex-col justify-between space-y-4 hover:border-amber-300 transition-custom">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200">
+                    <i data-lucide="sunrise" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-bold text-neutral-900 uppercase tracking-wider">Morning</h3>
+                    <span class="text-[11px] text-neutral-500 font-medium">8:00 AM (Breakfast)</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Morning</span>
+              </div>
+              
+              <div class="p-2.5 rounded-lg bg-amber-50/60 border border-amber-100 text-[11px] text-amber-900 mt-3 leading-relaxed">
+                Take with breakfast or 30 mins before food (stomach PPIs). Restricts water pills to morning to stop nighttime waking.
+              </div>
+
+              <div id="dedicated-slot-morning" class="mt-4 space-y-2.5 min-h-[120px]">
+                <span class="text-xs text-neutral-400 italic block py-6 text-center">No medications scheduled</span>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-neutral-100 text-[10px] text-neutral-500 flex items-center space-x-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-600 flex-shrink-0"></i>
+              <span>Strict Diuretic timing prevents dark falls.</span>
+            </div>
+          </div>
+
+          <!-- Afternoon Slot (1:00 PM) -->
+          <div class="bg-white rounded-xl border border-neutral-200 shadow-card p-5 flex flex-col justify-between space-y-4 hover:border-sky-300 transition-custom">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center border border-sky-200">
+                    <i data-lucide="sun" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-bold text-neutral-900 uppercase tracking-wider">Afternoon</h3>
+                    <span class="text-[11px] text-neutral-500 font-medium">1:00 PM (Lunch)</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-semibold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">Afternoon</span>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-sky-50/60 border border-sky-100 text-[11px] text-sky-900 mt-3 leading-relaxed">
+                Take with lunch & full glass of water. Spaced >= 4 hours away from morning BP, thyroid, and antibiotics.
+              </div>
+
+              <div id="dedicated-slot-afternoon" class="mt-4 space-y-2.5 min-h-[120px]">
+                <span class="text-xs text-neutral-400 italic block py-6 text-center">No medications scheduled</span>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-neutral-100 text-[10px] text-neutral-500 flex items-center space-x-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-sky-600 flex-shrink-0"></i>
+              <span>Chelation mineral spacing prevents drug blockage.</span>
+            </div>
+          </div>
+
+          <!-- Evening Slot (7:00 PM) -->
+          <div class="bg-white rounded-xl border border-neutral-200 shadow-card p-5 flex flex-col justify-between space-y-4 hover:border-orange-300 transition-custom">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-700 flex items-center justify-center border border-orange-200">
+                    <i data-lucide="sunset" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-bold text-neutral-900 uppercase tracking-wider">Evening</h3>
+                    <span class="text-[11px] text-neutral-500 font-medium">7:00 PM (Dinner)</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-semibold text-orange-800 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">Evening</span>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-orange-50/60 border border-orange-100 text-[11px] text-orange-900 mt-3 leading-relaxed">
+                Take with evening meal. Food acts as gastric buffer for NSAIDs and secondary daily maintenance doses.
+              </div>
+
+              <div id="dedicated-slot-evening" class="mt-4 space-y-2.5 min-h-[120px]">
+                <span class="text-xs text-neutral-400 italic block py-6 text-center">No medications scheduled</span>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-neutral-100 text-[10px] text-neutral-500 flex items-center space-x-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-orange-600 flex-shrink-0"></i>
+              <span>Never take dinner medications on an empty stomach.</span>
+            </div>
+          </div>
+
+          <!-- Bedtime Slot (10:00 PM) -->
+          <div class="bg-white rounded-xl border border-neutral-200 shadow-card p-5 flex flex-col justify-between space-y-4 hover:border-indigo-300 transition-custom">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
+                    <i data-lucide="moon" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-bold text-neutral-900 uppercase tracking-wider">Bedtime</h3>
+                    <span class="text-[11px] text-neutral-500 font-medium">10:00 PM (Sleep)</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-semibold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">Bedtime</span>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-[11px] text-indigo-900 mt-3 leading-relaxed">
+                Statins (cholesterol), sedatives & low-dose bedtime aspirin. Coincides with peak midnight cholesterol synthesis.
+              </div>
+
+              <div id="dedicated-slot-bedtime" class="mt-4 space-y-2.5 min-h-[120px]">
+                <span class="text-xs text-neutral-400 italic block py-6 text-center">No medications scheduled</span>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-neutral-100 text-[10px] text-neutral-500 flex items-center space-x-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-600 flex-shrink-0"></i>
+              <span>Take in bed. Keep water bedside to prevent dark falls.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chronotherapy Clinical Principles / Educational Card -->
+        <div class="bg-white rounded-xl p-6 border border-neutral-200 shadow-card space-y-4">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-[#3e3f16]"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-neutral-900">Geriatric Safety & Timing Principles</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-neutral-600">
+            <div class="p-4 rounded-lg bg-neutral-50 border border-neutral-200 space-y-1.5">
+              <div class="font-bold text-neutral-900 flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span>1. Nocturia Fall Prevention</span>
+              </div>
+              <p class="text-[11px] leading-relaxed text-neutral-600">Diuretics (water pills like Furosemide/Lasix) are strictly restricted to morning 8:00 AM. This prevents nighttime urination, disorientation in the dark, and catastrophic elderly hip fractures.</p>
+            </div>
+            <div class="p-4 rounded-lg bg-neutral-50 border border-neutral-200 space-y-1.5">
+              <div class="font-bold text-neutral-900 flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                <span>2. Chelation Binding Spacing</span>
+              </div>
+              <p class="text-[11px] leading-relaxed text-neutral-600">Calcium and iron supplements are spaced 4+ hours away from thyroid and antibiotics. When taken together, minerals chemically bind with drugs and eliminate their absorption.</p>
+            </div>
+            <div class="p-4 rounded-lg bg-neutral-50 border border-neutral-200 space-y-1.5">
+              <div class="font-bold text-neutral-900 flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                <span>3. Circadian Statin Timing</span>
+              </div>
+              <p class="text-[11px] leading-relaxed text-neutral-600">Cholesterol synthesis by the liver peaks between midnight and 04:00 AM. Statins (Atorvastatin) are timed for 10:00 PM Bedtime to coincide with maximum enzyme activity.</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- End VIEW 2: view-schedule -->
 
     </main>
 
@@ -591,6 +1197,9 @@
 
     let queuedMedicines = [];
     let lastAuditReport = null;
+    let currentScheduleData = null;
+    let activeMainTab = "audit";
+    let doseAdministeredState = {}; // { 'slotKey_idx': { administered: true, timeStr: '08:15 AM' } }
 
     // Initialize UI on load
     document.addEventListener("DOMContentLoaded", () => {
@@ -829,7 +1438,7 @@
       } catch (err) {
         statusText.textContent = "Upload failed or server unreachable. Please enter manually.";
       } finally {
-        setEngineRunning(false, "Standby · Ready to audit");
+        setEngineRunning(false, "Standby  -  Ready to audit");
         setTimeout(() => {
           statusEl.classList.add("hidden");
         }, 5000);
@@ -874,13 +1483,19 @@
 
         const report = await response.json();
         lastAuditReport = report;
+        if (report.schedule) {
+          currentScheduleData = report.schedule;
+        }
         renderUserflowResults(report);
         renderSchedule(report.schedule);
+        if (activeMainTab === 'schedule') {
+          renderDedicatedSchedule(currentScheduleData);
+        }
 
       } catch (err) {
         alert("Clinical Audit Error: " + err.message);
       } finally {
-        setEngineRunning(false, lastAuditReport ? `Audit complete (${lastAuditReport.medicines.length} verified)` : "Standby · Ready to audit");
+        setEngineRunning(false, lastAuditReport ? `Audit complete (${lastAuditReport.medicines.length} verified)` : "Standby  -  Ready to audit");
         btn.disabled = false;
         btn.classList.remove("opacity-75");
         btnText.textContent = "Run Safety Audit";
@@ -935,7 +1550,7 @@
         heroIcon.setAttribute("data-lucide", "check-circle");
         heroBadge.className = "px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-200 text-emerald-900";
         heroBadge.textContent = "Everything Is Fine";
-        heroTitle.textContent = "Everything Is Fine — No Conflicts Found";
+        heroTitle.textContent = "Everything Is Fine  -  No Conflicts Found";
         heroTitle.className = "text-lg font-bold text-emerald-950 mt-1";
         heroDesc.textContent = "Prescription verified safe. No pairwise interactions, duplicate ingredients, or allergy clashes found.";
       }

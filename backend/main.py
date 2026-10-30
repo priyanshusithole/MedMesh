@@ -1,5 +1,5 @@
 """
-main.py — MedGuard FastAPI Application
+main.py  -  MedGuard FastAPI Application
 =======================================
 Purpose: Entry point for the MedGuard backend API.
          This file creates the FastAPI app, configures middleware,
@@ -15,20 +15,20 @@ HOW TO RUN:
   - "--port 8000" = listen on port 8000
 
 AFTER STARTING, VISIT:
-  http://127.0.0.1:8000/health    → health check
-  http://127.0.0.1:8000/docs      → interactive API documentation (auto-generated!)
-  http://127.0.0.1:8000/redoc     → alternative documentation format
+  http://127.0.0.1:8000/health     ->  health check
+  http://127.0.0.1:8000/docs       ->  interactive API documentation (auto-generated!)
+  http://127.0.0.1:8000/redoc      ->  alternative documentation format
 
-TEACHING NOTE — What is an "endpoint" / "route"?
+TEACHING NOTE  -  What is an "endpoint" / "route"?
   A route is a URL pattern + an HTTP method (GET, POST, etc.) that
   maps to a specific Python function.
-  Example: POST /api/check → run_check() function
+  Example: POST /api/check  ->  run_check() function
   When the frontend sends a POST request to /api/check, FastAPI
   automatically calls run_check() and returns whatever it returns.
 
-TEACHING NOTE — What is "middleware"?
+TEACHING NOTE  -  What is "middleware"?
   Middleware is code that runs BEFORE and AFTER every request.
-  It's like a security checkpoint at the airport — every passenger
+  It's like a security checkpoint at the airport  -  every passenger
   (request) passes through it before reaching their gate (endpoint).
   We use CORSMiddleware so browsers allow our frontend to call the API.
 """
@@ -75,9 +75,9 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# LIFESPAN — Startup and Shutdown Events
+# LIFESPAN  -  Startup and Shutdown Events
 # =============================================================================
-# TEACHING NOTE — What is a "lifespan context manager"?
+# TEACHING NOTE  -  What is a "lifespan context manager"?
 # FastAPI lets you define code to run when the server STARTS (startup)
 # and when it STOPS (shutdown). The @asynccontextmanager decorator
 # turns a generator function into a context manager.
@@ -86,7 +86,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── STARTUP ──────────────────────────────────────────────────────────────
+    # -- STARTUP --------------------------------------------------------------
     logger.info("=" * 60)
     logger.info("  MedGuard Backend Starting Up")
     logger.info("=" * 60)
@@ -94,18 +94,18 @@ async def lifespan(app: FastAPI):
     # Check if Gemini API key is configured
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if gemini_key:
-        logger.info("✅ Gemini API key found — AI explanations enabled")
+        logger.info("  Gemini API key found  -  AI explanations enabled")
     else:
-        logger.warning("⚠️  No GEMINI_API_KEY — using template explanations (still works!)")
+        logger.warning("    No GEMINI_API_KEY  -  using template explanations (still works!)")
 
-    logger.info("✅ Safety engine loaded (interaction + Beers datasets)")
-    logger.info("✅ API ready at http://127.0.0.1:8000")
-    logger.info("📖 Interactive docs at http://127.0.0.1:8000/docs")
+    logger.info("  Safety engine loaded (interaction + Beers datasets)")
+    logger.info("  API ready at http://127.0.0.1:8000")
+    logger.info("  Interactive docs at http://127.0.0.1:8000/docs")
     logger.info("=" * 60)
 
     yield  # Server runs here (between yield = normal operation)
 
-    # ── SHUTDOWN ─────────────────────────────────────────────────────────────
+    # -- SHUTDOWN -------------------------------------------------------------
     logger.info("MedGuard Backend shutting down...")
 
 
@@ -121,7 +121,7 @@ app = FastAPI(
         "AI-powered polypharmacy conflict detector for the elderly. "
         "Detects drug-drug interactions, duplicate active ingredients, "
         "and age-specific (Beers Criteria) warnings. "
-        "Decision support only — always confirm with a pharmacist."
+        "Decision support only  -  always confirm with a pharmacist."
     ),
     version="1.0.0",
     contact={
@@ -137,7 +137,7 @@ app = FastAPI(
 # =============================================================================
 # CORS MIDDLEWARE
 # =============================================================================
-# TEACHING NOTE — WHY CORS MATTERS:
+# TEACHING NOTE  -  WHY CORS MATTERS:
 # Browsers enforce the "Same-Origin Policy": a web page at
 # http://localhost:3000 is NOT allowed to make fetch() calls to
 # http://localhost:8000 by default (different ports = different origins).
@@ -176,13 +176,13 @@ async def vercel_path_rewrite_middleware(request: Request, call_next):
 # =============================================================================
 # STATIC FILE SERVING (Serve the Frontend HTML)
 # =============================================================================
-# TEACHING NOTE — Static vs Dynamic content:
+# TEACHING NOTE  -  Static vs Dynamic content:
 # "Static" = files that don't change per request (HTML, CSS, JS, images)
 # "Dynamic" = content generated on-the-fly per request (our API responses)
 #
 # FastAPI can serve static files directly. We mount our frontend/ folder
 # at the root URL so visiting http://localhost:8000/ serves index.html.
-# This means one server handles BOTH the API AND the frontend — simple!
+# This means one server handles BOTH the API AND the frontend  -  simple!
 #
 # We use a try/except because frontend/ might not exist yet during development
 
@@ -196,17 +196,17 @@ except Exception as e:
 
 
 # =============================================================================
-# PYDANTIC MODELS — Request and Response Schemas
+# PYDANTIC MODELS  -  Request and Response Schemas
 # =============================================================================
-# TEACHING NOTE — What is Pydantic?
+# TEACHING NOTE  -  What is Pydantic?
 # Pydantic is Python's most popular data validation library.
 # We define our expected request/response shapes as Python classes.
 # FastAPI uses these classes to:
-#   1. Validate incoming JSON (wrong types → automatic 422 error with details)
+#   1. Validate incoming JSON (wrong types  ->  automatic 422 error with details)
 #   2. Auto-generate the /docs interactive documentation
 #   3. Serialize our response dicts to JSON
 #
-# Think of BaseModel subclasses as "contracts" — they define exactly
+# Think of BaseModel subclasses as "contracts"  -  they define exactly
 # what shape data must be in.
 #
 # Field(...) means the field is REQUIRED (no default value)
@@ -298,7 +298,7 @@ async def health_check():
     """
     Simple health check endpoint.
 
-    TEACHING NOTE — Why do APIs have health check endpoints?
+    TEACHING NOTE  -  Why do APIs have health check endpoints?
     Cloud platforms (Render, Railway, AWS) periodically ping /health
     to verify your service is alive. If it returns a non-200 status,
     the platform restarts your service automatically.
@@ -362,11 +362,11 @@ async def normalize_endpoint(request: NormalizeRequest):
 @app.post("/check", tags=["Safety Engine"], summary="Check Medication Safety Alias")
 async def check_medications(request: CheckRequest):
     """
-    THE MAIN ENDPOINT — runs the full MedGuard safety pipeline.
+    THE MAIN ENDPOINT  -  runs the full MedGuard safety pipeline.
 
     Pipeline:
     1. Validate input
-    2. Normalize all drug names → ingredients (rxnorm.py)
+    2. Normalize all drug names  ->  ingredients (rxnorm.py)
     3. Run safety engine (interactions.py)
        a. Duplicate ingredient detection
        b. Pairwise interaction check
@@ -374,16 +374,16 @@ async def check_medications(request: CheckRequest):
     4. Add AI plain-English explanations (explainer.py) if requested
     5. Return structured report
 
-    TEACHING NOTE — What is an HTTPException?
+    TEACHING NOTE  -  What is an HTTPException?
     When something goes wrong (empty input, etc.), we raise HTTPException.
     FastAPI catches this and returns a proper HTTP error response:
     {"detail": "error message"} with the appropriate status code.
-    Status 400 = "Bad Request" (client's fault — bad input).
-    Status 500 = "Internal Server Error" (server's fault — our bug).
+    Status 400 = "Bad Request" (client's fault  -  bad input).
+    Status 500 = "Internal Server Error" (server's fault  -  our bug).
     """
-    logger.info(f"POST /api/check — {len(request.names)} medicines, age: {request.patient_age}")
+    logger.info(f"POST /api/check  -  {len(request.names)} medicines, age: {request.patient_age}")
 
-    # ─── 1. Validate ──────────────────────────────────────────────────────────
+    # --- 1. Validate ----------------------------------------------------------
     clean_names = [n.strip() for n in request.names if n.strip()]
     if not clean_names:
         raise HTTPException(
@@ -396,13 +396,13 @@ async def check_medications(request: CheckRequest):
             detail="Maximum 30 medicines per check. Please split into smaller batches."
         )
 
-    # ─── 2. Normalize ─────────────────────────────────────────────────────────
-    # normalize_drugs is async — it runs RxNorm lookups concurrently
+    # --- 2. Normalize ---------------------------------------------------------
+    # normalize_drugs is async  -  it runs RxNorm lookups concurrently
     logger.info(f"Normalizing {len(clean_names)} medicine names...")
     normalized_meds = await normalize_drugs(clean_names)
 
-    # ─── 3. Run Safety Engine ─────────────────────────────────────────────────
-    # This is synchronous (CPU work, no I/O) — pure Python dict lookups
+    # --- 3. Run Safety Engine -------------------------------------------------
+    # This is synchronous (CPU work, no I/O)  -  pure Python dict lookups
     patient_age = request.patient_age or 0
     report = run_safety_engine(
         normalized_meds,
@@ -415,13 +415,13 @@ async def check_medications(request: CheckRequest):
     report["patient_gender"] = request.patient_gender or "Not specified"
     report["allergies"] = request.allergies or []
 
-    # ─── 4. Add AI Explanations ───────────────────────────────────────────────
+    # --- 4. Add AI Explanations -----------------------------------------------
     # Only if "explain": true in the request (default: true)
     if request.explain and report["findings"]:
         logger.info(f"Generating AI explanations for {len(report['findings'])} findings...")
         report["findings"] = await explain_all_findings(report["findings"])
 
-    # ─── 5. Return Report ─────────────────────────────────────────────────────
+    # --- 5. Return Report -----------------------------------------------------
     # Include optimized 24-hour schedule
     report["schedule"] = generate_schedule(report["medicines"])
 
@@ -469,13 +469,13 @@ async def check_image(
     """
     OCR pipeline endpoint for prescription photo uploads.
 
-    TEACHING NOTE — What is UploadFile?
+    TEACHING NOTE  -  What is UploadFile?
     FastAPI's UploadFile type handles multipart form data (file uploads).
     When a user selects a photo in the browser, the browser sends it as
-    "multipart/form-data" — a special encoding for binary files.
+    "multipart/form-data"  -  a special encoding for binary files.
     UploadFile gives us the filename, content type, and raw bytes.
 
-    TEACHING NOTE — What is Form()?
+    TEACHING NOTE  -  What is Form()?
     When sending files, you can't use JSON body (JSON is text-only).
     So additional fields like patient_age are sent as "form fields"
     alongside the file. Form() tells FastAPI to read them from the form
@@ -487,7 +487,7 @@ async def check_image(
     The user confirms/corrects them, THEN calls /api/check with the confirmed list.
     This is the safety guardrail for doctor handwriting errors.
     """
-    logger.info(f"POST /api/check-image — file: {file.filename}, type: {file.content_type}")
+    logger.info(f"POST /api/check-image  -  file: {file.filename}, type: {file.content_type}")
 
     # Validate file type
     allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
@@ -498,7 +498,7 @@ async def check_image(
         )
 
     # Validate file size (max 10MB)
-    # TEACHING NOTE — read() loads entire file into memory as bytes
+    # TEACHING NOTE  -  read() loads entire file into memory as bytes
     image_bytes = await file.read()
     max_size_bytes = 10 * 1024 * 1024  # 10MB in bytes
     if len(image_bytes) > max_size_bytes:
@@ -546,7 +546,7 @@ async def check_image(
 # =============================================================================
 # RUN DIRECTLY (for development)
 # =============================================================================
-# TEACHING NOTE — What is `if __name__ == "__main__"`?
+# TEACHING NOTE  -  What is `if __name__ == "__main__"`?
 # Every Python file has a __name__ variable.
 # When you RUN a file directly (python main.py), __name__ = "__main__"
 # When you IMPORT a file (import main), __name__ = "main"

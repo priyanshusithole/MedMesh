@@ -1,12 +1,12 @@
 """
-scheduler.py — 24-Hour Smart Dose Schedule Generator
+scheduler.py - 24-Hour Smart Dose Schedule Generator
 ===================================================
 Purpose: Automatically organizes an elderly patient's daily medication regimen
 into a safe, chronologically spaced 24-hour schedule:
-  - 🌅 Morning (8:00 AM)
-  - ☀️ Afternoon / Lunch (1:00 PM)
-  - 🌆 Evening / Dinner (7:00 PM)
-  - 🌙 Bedtime (10:00 PM)
+  - Morning (8:00 AM)
+  - Afternoon / Lunch (1:00 PM)
+  - Evening / Dinner (7:00 PM)
+  - Bedtime (10:00 PM)
 
 Clinical Spacing Rules:
   1. Diuretics (Furosemide) MUST be in the morning (prevents nighttime fall risks).
@@ -20,7 +20,7 @@ from typing import List, Dict, Any
 
 # Clinical timing affinity rules based on active ingredients
 TIME_AFFINITIES = {
-    # ─── Morning (8:00 AM) ───────────────────────────────────────────────────
+    # --- Morning (8:00 AM) ---------------------------------------------------
     "furosemide": "morning",        # Diuretics: morning to prevent nocturia/falls
     "lasix": "morning",
     "spironolactone": "morning",
@@ -36,13 +36,13 @@ TIME_AFFINITIES = {
     "rabeprazole": "morning",
     "levothyroxine": "morning",
 
-    # ─── Afternoon / Lunch (1:00 PM) ─────────────────────────────────────────
+    # --- Afternoon / Lunch (1:00 PM) -----------------------------------------
     "calcium": "afternoon",         # Spaced away from morning BP drugs & antibiotics
     "metformin": "afternoon",       # Often with meals
     "amoxicillin": "afternoon",     # Midday doses for 2-3x daily antibiotics
     "ciprofloxacin": "afternoon",
 
-    # ─── Bedtime (10:00 PM) ──────────────────────────────────────────────────
+    # --- Bedtime (10:00 PM) --------------------------------------------------
     "atorvastatin": "bedtime",      # Statins: nighttime lipid synthesis
     "simvastatin": "bedtime",
     "rosuvastatin": "bedtime",
@@ -62,28 +62,28 @@ def generate_schedule(normalized_meds: List[Dict[str, Any]]) -> Dict[str, Any]:
         "morning": {
             "time": "8:00 AM (Breakfast)",
             "label": "Morning",
-            "icon": "🌅",
+            "icon": "sunrise",
             "medicines": [],
             "instructions": "Take with breakfast or 30 mins before food for stomach-protecting pills."
         },
         "afternoon": {
             "time": "1:00 PM (Lunch)",
             "label": "Afternoon",
-            "icon": "☀️",
+            "icon": "sun",
             "medicines": [],
             "instructions": "Take with lunch and a full glass of water. Spaced away from morning medications."
         },
         "evening": {
             "time": "7:00 PM (Dinner)",
             "label": "Evening",
-            "icon": "🌆",
+            "icon": "sunset",
             "medicines": [],
             "instructions": "Take with your evening meal."
         },
         "bedtime": {
             "time": "10:00 PM (Bedtime)",
             "label": "Bedtime",
-            "icon": "🌙",
+            "icon": "moon",
             "medicines": [],
             "instructions": "Take right before sleeping. Keep water by the bedside to avoid getting up quickly."
         }
@@ -123,7 +123,7 @@ def generate_schedule(normalized_meds: List[Dict[str, Any]]) -> Dict[str, Any]:
         "schedule": schedule,
         "total_scheduled": total_scheduled,
         "advice": (
-            "⚠️ Always verify with your pharmacist before changing medicine times. "
+            "Always verify with your pharmacist before changing medicine times. "
             "Never take two doses together if you missed one."
         )
     }
