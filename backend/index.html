@@ -904,6 +904,10 @@
                 <span class="text-xs text-teal-800 bg-brand-50 px-3 py-1 rounded border border-brand-100 font-medium">
                   Conflict-Spaced Regimen
                 </span>
+                <button onclick="downloadScheduleICS()" class="px-3 py-1 bg-white hover:bg-neutral-50 border border-neutral-300 text-neutral-800 rounded text-xs font-semibold flex items-center space-x-1.5 transition-custom shadow-sm" title="Download recurring schedule to Google/Apple Calendar">
+                  <i data-lucide="calendar-plus" class="w-3.5 h-3.5 text-brand-700"></i>
+                  <span>Add to Calendar (.ics)</span>
+                </button>
                 <button onclick="switchMainTab('schedule')" class="px-3 py-1 bg-[#3e3f16] hover:bg-[#2b2c0f] text-white rounded text-xs font-semibold flex items-center space-x-1.5 transition-custom shadow-sm">
                   <span>Open Full Tracker</span>
                   <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
@@ -1003,6 +1007,10 @@
 
           <!-- Schedule View Quick Actions -->
           <div class="flex items-center space-x-2 no-print">
+            <button onclick="downloadScheduleICS()" class="px-3.5 py-2 bg-white hover:bg-neutral-50 border border-neutral-300 text-neutral-800 rounded-lg text-xs font-semibold transition-custom flex items-center space-x-1.5 shadow-sm" title="Export recurring daily reminders to Google/Apple Calendar">
+              <i data-lucide="calendar-plus" class="w-3.5 h-3.5 text-brand-700"></i>
+              <span>Add to Calendar (.ics)</span>
+            </button>
             <button onclick="recalculateSchedule()" class="px-3.5 py-2 border border-neutral-300 rounded-lg text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-custom flex items-center space-x-1.5 shadow-sm">
               <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-neutral-600"></i>
               <span>Recalculate Timing</span>
@@ -1958,6 +1966,165 @@
       lucide.createIcons();
       resultsSection.scrollIntoView({ behavior: 'smooth' });
     }
+
+    // Stage 4.5: Download 24-Hour Dose Schedule as RFC 5545 iCalendar (.ics)
+    async function downloadScheduleICS() {
+      let scheduleData = currentScheduleData;
+      if ((!scheduleData || !scheduleData.schedule) && lastAuditReport && lastAuditReport.schedule) {
+        scheduleData = lastAuditReport.schedule;
+      }
+
+      // If no schedule exists yet, but medicines are queued, fetch it first
+      if ((!scheduleData || !scheduleData.schedule || scheduleData.total_scheduled === 0) && queuedMedicines.length > 0) {
+        await fetchOrGenerateSchedule();
+        scheduleData = currentScheduleData;
+      }
+
+      if (!scheduleData || !scheduleData.schedule || scheduleData.total_scheduled === 0) {
+        alert("Please add medications or run a safety audit before exporting your schedule.");
+        return;
+      }
+
+      // Resolve patient name for personalized calendar events and filename
+      const patientName = (patientProfile.name && patientProfile.name.trim())
+        || (lastAuditReport && lastAuditReport.patient_name && lastAuditReport.patient_name.trim())
+        || "Patient";
+
+      const safePatientName = patientName.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const filename = `MedMesh_${safePatientName}_Dose_Schedule.ics`;
+
+      // Base date: Today at local time
+      const now = new Date();
+      const pad2 = (n) => String(n).padStart(2, '0');
+      const year = now.getFullYear();
+      const month = pad2(now.getMonth() + 1);
+      const day = pad2(now.getDate());
+      const datePrefix = `${year}${month}${day}`;
+
+      const timestamp = `${now.getUTCFullYear()}${pad2(now.getUTCMonth()+1)}${pad2(now.getUTCDate())}T${pad2(now.getUTCHours())}${pad2(now.getUTCMinutes())}${pad2(now.getUTCSeconds())}Z`;
+
+      // 24-Hour Slot Timing Configurations (Floating local time)
+      const slotConfigs = {
+        morning: {
+          time: "080000",
+          endTime: "081500",
+          label: "Morning Dose (Breakfast)",
+          alarmMinutes: 10
+        },
+        afternoon: {
+          time: "130000",
+          endTime: "131500",
+          label: "Afternoon Dose (Lunch)",
+          alarmMinutes: 10
+        },
+        evening: {
+          time: "190000",
+          endTime: "191500",
+          label: "Evening Dose (Dinner)",
+          alarmMinutes: 10
+        },
+        bedtime: {
+          time: "220000",
+          endTime: "221500",
+          label: "Bedtime Dose (Sleep)",
+          alarmMinutes: 10
+        }
+      };
+
+      const escapeIcs = (str) => {
+        return (str || "")
+          .replace(/\\/g, "\\\\")
+          .replace(/;/g, "\\;")
+          .replace(/,/g, "\\,")
+          .replace(/\r?\n/g, "\\n");
+      };
+
+      let events = [];
+
+      for (const [slotKey, config] of Object.entries(slotConfigs)) {
+        const slotInfo = scheduleData.schedule[slotKey];
+        if (!slotInfo || !slotInfo.medicines || slotInfo.medicines.length === 0) {
+          continue;
+        }
+
+        const meds = slotInfo.medicines;
+        const medNames = meds.map(m => m.name).join(", ");
+        const summary = `MedMesh: ${config.label} - ${meds.length} ${meds.length === 1 ? 'Med' : 'Meds'}`;
+
+        let descLines = [
+          `MEDICATION DOSE SCHEDULE FOR: ${patientName.toUpperCase()}`,
+          `Window: ${config.label}`,
+          `Instructions: ${slotInfo.instructions || 'Take as directed'}`,
+          "",
+          "MEDICINES TO TAKE:"
+        ];
+
+        meds.forEach((m, idx) => {
+          descLines.push(`${idx + 1}. ${m.name}`);
+          if (m.ingredient) descLines.push(`   Active Salt: ${m.ingredient}`);
+          if (m.tip) descLines.push(`   Clinical Advice: ${m.tip}`);
+        });
+
+        descLines.push("");
+        descLines.push("Generated by MedMesh - Clinical Polypharmacy Safety Engine");
+        descLines.push("https://med-mesh.vercel.app");
+
+        const escapedSummary = escapeIcs(summary);
+        const escapedDesc = escapeIcs(descLines.join("\n"));
+        const uid = `medmesh-${safePatientName}-${slotKey}-${datePrefix}@med-mesh.vercel.app`;
+
+        const eventLines = [
+          "BEGIN:VEVENT",
+          `UID:${uid}`,
+          `DTSTAMP:${timestamp}`,
+          `DTSTART:${datePrefix}T${config.time}`,
+          `DTEND:${datePrefix}T${config.endTime}`,
+          "RRULE:FREQ=DAILY;INTERVAL=1",
+          `SUMMARY:${escapedSummary}`,
+          `DESCRIPTION:${escapedDesc}`,
+          "LOCATION:Home / Senior Living",
+          "STATUS:CONFIRMED",
+          "TRANSP:OPAQUE",
+          "BEGIN:VALARM",
+          "ACTION:DISPLAY",
+          `DESCRIPTION:Reminder: Time to take your ${config.label} (${medNames})`,
+          `TRIGGER:-PT${config.alarmMinutes}M`,
+          "END:VALARM",
+          "END:VEVENT"
+        ];
+
+        events.push(eventLines.join("\r\n"));
+      }
+
+      if (events.length === 0) {
+        alert("No active scheduled doses found to export.");
+        return;
+      }
+
+      const icsCalendar = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//MedMesh//Clinical Polypharmacy Safety Engine//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        `X-WR-CALNAME:MedMesh Medication Schedule (${patientName})`,
+        "X-WR-TIMEZONE:Local",
+        events.join("\r\n"),
+        "END:VCALENDAR"
+      ].join("\r\n") + "\r\n";
+
+      // Trigger native client-side file download
+      const blob = new Blob([icsCalendar], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.setAttribute("download", filename);
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
+    }
+
 
     // Stage 4: Render 24-Hour Dose Schedule
     function renderSchedule(scheduleData) {
