@@ -1996,6 +1996,8 @@
       lucide.createIcons();
     }
 
+    let currentAudioPlayer = null;
+
     // Cultural Affectionate Referencing Engine
     function getAffectionateHonorific(lang = 'hi') {
       const nameInput = document.getElementById("patient-name-input");
@@ -2028,13 +2030,13 @@
       // 60+: "Dadi ji"
       if (isFemale) {
         if (age !== null && age <= 10) {
-          return lang === 'hi' ? (cleanName ? `${cleanName} beta` : "Beta") : (cleanName ? `dear little ${cleanName}` : "dear beta");
+          return lang === 'hi' ? (cleanName ? `${cleanName} बेटा` : "बेटा") : (cleanName ? `dear little ${cleanName}` : "dear beta");
         } else if (age !== null && age >= 60) {
-          return lang === 'hi' ? (cleanName ? `${cleanName} Dadi ji` : "Dadi ji") : (cleanName ? `dear ${cleanName} Dadi ji` : "dear Dadi ji");
+          return lang === 'hi' ? (cleanName ? `${cleanName} दादी जी` : "दादी जी") : (cleanName ? `dear ${cleanName} Dadi ji` : "dear Dadi ji");
         } else if (age !== null && age >= 40) {
-          return lang === 'hi' ? (cleanName ? `${cleanName} Aunty ji` : "Aunty ji") : (cleanName ? `dear ${cleanName} Aunty ji` : "dear Aunty ji");
+          return lang === 'hi' ? (cleanName ? `${cleanName} आंटी जी` : "आंटी जी") : (cleanName ? `dear ${cleanName} Aunty ji` : "dear Aunty ji");
         } else {
-          return lang === 'hi' ? (cleanName ? `${cleanName} Didi ji` : "Didi ji") : (cleanName ? `dear ${cleanName}` : "dear sister");
+          return lang === 'hi' ? (cleanName ? `${cleanName} दीदी जी` : "दीदी जी") : (cleanName ? `dear ${cleanName}` : "dear Didi");
         }
       }
 
@@ -2045,64 +2047,87 @@
       // 60+: "Dadaji" (affectionate grandfather honorific)
       if (isMale) {
         if (age !== null && age <= 10) {
-          return lang === 'hi' ? (cleanName ? `${cleanName} beta` : "Beta") : (cleanName ? `dear little ${cleanName}` : "dear beta");
+          return lang === 'hi' ? (cleanName ? `${cleanName} बेटा` : "बेटा") : (cleanName ? `dear little ${cleanName}` : "dear beta");
         } else if (age !== null && age >= 60) {
-          return lang === 'hi' ? (cleanName ? `${cleanName} Dadaji` : "Dadaji") : (cleanName ? `dear ${cleanName} Dadaji` : "dear Dadaji");
+          return lang === 'hi' ? (cleanName ? `${cleanName} दादाजी` : "दादाजी") : (cleanName ? `dear ${cleanName} Dadaji` : "dear Dadaji");
         } else if (age !== null && age >= 40) {
-          return lang === 'hi' ? (cleanName ? `${cleanName} Uncle ji` : "Uncle ji") : (cleanName ? `dear ${cleanName} Uncle ji` : "dear Uncle ji");
+          return lang === 'hi' ? (cleanName ? `${cleanName} अंकल जी` : "अंकल जी") : (cleanName ? `dear ${cleanName} Uncle ji` : "dear Uncle ji");
         } else {
-          return lang === 'hi' ? (cleanName ? `${cleanName} Bhaiya ji` : "Bhaiya ji") : (cleanName ? `dear ${cleanName}` : "dear brother");
+          return lang === 'hi' ? (cleanName ? `${cleanName} भैया जी` : "भैया जी") : (cleanName ? `dear ${cleanName}` : "dear Bhaiya");
         }
       }
 
       // Gender Unspecified / Other
       if (age !== null && age <= 10) {
-        return lang === 'hi' ? (cleanName ? `${cleanName} beta` : "Beta") : (cleanName ? `dear little ${cleanName}` : "dear beta");
+        return lang === 'hi' ? (cleanName ? `${cleanName} बेटा` : "बेटा") : (cleanName ? `dear little ${cleanName}` : "dear beta");
       } else if (age !== null && age >= 60) {
-        return lang === 'hi' ? (cleanName ? `${cleanName} ji` : "Aadarniya ji") : (cleanName ? `dear respected ${cleanName}` : "dear respected elder");
+        return lang === 'hi' ? (cleanName ? `${cleanName} जी` : "आदरणीय जी") : (cleanName ? `dear respected ${cleanName}` : "dear respected elder");
       } else if (age !== null && age >= 40) {
-        return lang === 'hi' ? (cleanName ? `${cleanName} ji` : "Aadarniya ji") : (cleanName ? `respected ${cleanName}` : "respected family member");
+        return lang === 'hi' ? (cleanName ? `${cleanName} जी` : "आदरणीय जी") : (cleanName ? `respected ${cleanName}` : "respected family member");
       } else {
-        return lang === 'hi' ? (cleanName ? `${cleanName} ji` : "Aadarniya ji") : (cleanName ? `dear ${cleanName}` : "dear family member");
+        return lang === 'hi' ? (cleanName ? `${cleanName} जी` : "आदरणीय जी") : (cleanName ? `dear ${cleanName}` : "dear family member");
       }
     }
 
-    // Affectionate Audio Briefing
-    function speakCaregiverBrief(lang = 'en') {
-      if (!('speechSynthesis' in window)) {
-        alert("Audio synthesis is not supported on this browser.");
-        return;
+    // Affectionate Audio Briefing with Simple Words and Resilient Audio Pipeline
+    function generateAffectionateAudioText(lang = 'en') {
+      if (!lastAuditReport) return null;
+      const honorific = getAffectionateHonorific(lang);
+      const highCount = (lastAuditReport.summary && lastAuditReport.summary.high) || 0;
+      const modCount = (lastAuditReport.summary && lastAuditReport.summary.moderate) || 0;
+
+      let displayTitle = "";
+      let ttsText = "";
+
+      if (lang === 'hi') {
+        displayTitle = `Affectionate Briefing for ${honorific} (Hindi)`;
+        if (highCount > 0) {
+          ttsText = `नमस्ते ${honorific}! हम आपका बहुत ख्याल रखना चाहते हैं। कृपया ध्यान दें: आपकी दो दवाइयां एक साथ नहीं लेनी चाहिए, क्योंकि इससे तबियत खराब हो सकती है। कृपया अभी ये दवाइयां मत लीजिए, और पहले अपने डॉक्टर को दिखाइए ताकि आप सुरक्षित रहें।`;
+        } else if (modCount > 0) {
+          ttsText = `नमस्ते ${honorific}! हम चाहते हैं कि आप हमेशा स्वस्थ रहें। आपकी कुछ दवाइयां मिलती-जुलती हैं, या इनसे चक्कर आ सकते हैं। कृपया समय पर पानी के साथ दवाइयां लें, और अगर कोई परेशानी लगे तो तुरंत अपने परिवार या डॉक्टर को बताएं।`;
+        } else {
+          ttsText = `नमस्ते ${honorific}! बहुत अच्छी खबर है! आपकी सभी दवाइयां सुरक्षित हैं और बिल्कुल सही हैं। चिंता की कोई बात नहीं है। समय पर दवाइयां लें, खूब पानी पिएं, और हमेशा खुश और स्वस्थ रहें!`;
+        }
+      } else {
+        displayTitle = `Affectionate Briefing for ${honorific} (English)`;
+        if (highCount > 0) {
+          ttsText = `Hello ${honorific}! We care about you very much. Please be careful: two of your medicines should not be taken together because they can harm your health. Please do not take them right now. Show this list to your doctor or chemist first, so they can keep you safe.`;
+        } else if (modCount > 0) {
+          ttsText = `Hello ${honorific}! We want you to feel happy and well every single day. We noticed that some of your medicines are very similar, or might cause dizziness. Please take your pills on time with water, and if you feel sleepy or unwell, tell your family or doctor right away.`;
+        } else {
+          ttsText = `Hello ${honorific}! Good news! All your medicines look safe and go well together. There is nothing to worry about. Take your medicines on time, drink plenty of water, and stay healthy and smiling!`;
+        }
       }
-      window.speechSynthesis.cancel();
+
+      return { honorific, displayTitle, displayQuote: ttsText, ttsText };
+    }
+
+    function stopAudioBrief() {
+      if (currentAudioPlayer) {
+        currentAudioPlayer.pause();
+        currentAudioPlayer.currentTime = 0;
+        currentAudioPlayer = null;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      const statusPill = document.getElementById("audio-brief-status-pill");
+      if (statusPill) statusPill.textContent = "Stopped";
+    }
+
+    async function speakCaregiverBrief(lang = 'en') {
+      stopAudioBrief();
       if (!lastAuditReport) {
         alert("Please run a safety audit first to generate an audio briefing.");
         return;
       }
 
-      const honorific = getAffectionateHonorific(lang);
-      const highCount = (lastAuditReport.summary && lastAuditReport.summary.high) || 0;
-      const modCount = (lastAuditReport.summary && lastAuditReport.summary.moderate) || 0;
+      const audioData = generateAffectionateAudioText(lang);
+      if (!audioData) return;
 
-      let speechText = "";
-      if (lang === 'hi') {
-        if (highCount > 0) {
-          speechText = `Pranam ${honorific}! Dhyan se suniye, hum aapki sehat ka bohot khayal rakhna chahte hain. Is prescription mein ${highCount} gambhir khatre ya dawaiyon ka aapas mein takrav mila hai. Kripya bina doctor ki salah ke ye dawai saath mein bilkul mat lijiye. Aapki tabiyat hum sabke liye sabse anmol hai, isliye pehle apne doctor se zaroor baat kar lein.`;
-        } else if (modCount > 0) {
-          speechText = `Namaste ${honorific}! Aapki tabiyat hamesha achi rahe, yahi hamari sabse badi chinta hai. Prescription ki jaanch mein kuch aisi dawaiyan mili hain jinke ingredients milte-julte hain ya savdhani rakhne ki zaroorat hai. Kripya dawaiyan niyamit samay par lein aur thoda savdhan rahein. Agar koi bhi bechaini lage, toh turant doctor ya caregiver ko batayein.`;
-        } else {
-          speechText = `Pranam ${honorific}! Bohot khushi ki baat hai, aapki sabhi dawaiyan bilkul surakshit aur jaanchi hui hain. Koi bhi dangerous drug interaction ya allergy ka khatra nahi mila hai. Samay par apni dawaiyan lijiye, paushtik aahar lein, aur hamesha swasth aur muskurate rahiye!`;
-        }
-      } else {
-        if (highCount > 0) {
-          speechText = `Warm greetings, ${honorific}! We care deeply about your health and well-being. Please listen with extra care: our safety audit detected ${highCount} high-risk conflict(s) or allergy alerts in this regimen. Please do not take these medicines together before consulting your doctor or pharmacist. Your safety is our highest priority, so please speak with your physician right away.`;
-        } else if (modCount > 0) {
-          speechText = `Hello ${honorific}! We want you to feel comfortable and cared for every single day. In reviewing your medications, we noticed some duplicate ingredients or mild cautions. Please take your doses strictly on time as scheduled with water, and if you notice any dizziness or discomfort, please let your doctor or caregiver know.`;
-        } else {
-          speechText = `Warm greetings, ${honorific}! Wonderful news: all of your prescribed medications are verified, safe, and completely compatible. There are no dangerous interactions or duplicate ingredients found. Please take your doses faithfully on schedule, rest well, and stay healthy and smiling!`;
-        }
-      }
+      const { displayTitle, displayQuote, ttsText } = audioData;
 
-      // Render visible transcript card
+      // Update visible transcript card
       const transcriptBox = document.getElementById("audio-brief-transcript");
       const titleElem = document.getElementById("audio-brief-speaker-title");
       const textElem = document.getElementById("audio-brief-text");
@@ -2110,46 +2135,61 @@
 
       if (transcriptBox && titleElem && textElem) {
         transcriptBox.classList.remove("hidden");
-        titleElem.textContent = lang === 'hi' 
-          ? `Affectionate Briefing for ${honorific} (Hindi)`
-          : `Affectionate Briefing for ${honorific} (English)`;
-        textElem.textContent = speechText;
+        titleElem.textContent = displayTitle;
+        textElem.textContent = displayQuote;
         if (statusPill) statusPill.textContent = "Playing Voice";
         if (window.lucide) lucide.createIcons();
       }
 
-      const utterance = new SpeechSynthesisUtterance(speechText);
-      utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
-      utterance.rate = 0.88; // Gentle, comforting cadence
-      utterance.pitch = 1.05; // Warm, affectionate tone
+      // Try High-Fidelity Audio Stream endpoint first (supports native Hindi & English across all devices)
+      try {
+        const audioUrl = `/api/tts?lang=${lang}&text=${encodeURIComponent(ttsText)}`;
+        const audio = new Audio(audioUrl);
+        currentAudioPlayer = audio;
 
-      // Pick preferred warm voices if available
+        audio.onended = () => {
+          if (statusPill) statusPill.textContent = "Completed";
+          currentAudioPlayer = null;
+        };
+
+        audio.onerror = () => {
+          console.warn("Direct audio stream failed, falling back to Web Speech API");
+          currentAudioPlayer = null;
+          playWebSpeechFallback(ttsText, lang, statusPill);
+        };
+
+        await audio.play();
+      } catch (err) {
+        console.warn("Audio play promise rejected, using Web Speech fallback:", err);
+        playWebSpeechFallback(ttsText, lang, statusPill);
+      }
+    }
+
+    function playWebSpeechFallback(text, lang, statusPill) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+      utterance.rate = 0.88;
+      utterance.pitch = 1.05;
+
       const voices = window.speechSynthesis.getVoices();
       if (lang === 'hi') {
         const hiVoice = voices.find(v => (v.lang && v.lang.startsWith("hi")) || (v.name && v.name.toLowerCase().includes("hindi")));
         if (hiVoice) utterance.voice = hiVoice;
       } else {
-        const inVoice = voices.find(v => (v.lang === "en-IN" || v.lang === "en_IN") || (v.name && (v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("aria"))));
-        if (inVoice) utterance.voice = inVoice;
+        const enVoice = voices.find(v => (v.lang === "en-IN" || v.lang === "en_IN") || (v.name && (v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("aria"))));
+        if (enVoice) utterance.voice = enVoice;
       }
 
       utterance.onend = () => {
         if (statusPill) statusPill.textContent = "Completed";
       };
-
       utterance.onerror = () => {
         if (statusPill) statusPill.textContent = "Stopped";
       };
 
       window.speechSynthesis.speak(utterance);
-    }
-
-    function stopAudioBrief() {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      const statusPill = document.getElementById("audio-brief-status-pill");
-      if (statusPill) statusPill.textContent = "Stopped";
     }
 
     function escapeHtml(text) {

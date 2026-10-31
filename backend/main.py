@@ -55,7 +55,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from pydantic import BaseModel, Field
 
 # Import our own modules (files we created)
@@ -583,6 +583,56 @@ async def check_image(
         "next_step": "Send confirmed list to POST /api/check with your corrections"
     }
 
+
+def fetch_tts_audio_sync(text: str, lang: str = "hi") -> bytes:
+    """Fetches and stitches speech audio chunks from Google TTS for natural voice playback."""
+    import urllib.request, urllib.parse, re
+    sentences = re.split(r'([।!?.,;\n]+)', text)
+    chunks = []
+    current = ""
+    for part in sentences:
+        if not part:
+            continue
+        if len(current) + len(part) < 90:
+            current += part
+        else:
+            if current.strip():
+                chunks.append(current.strip())
+            current = part
+    if current.strip():
+        chunks.append(current.strip())
+
+    target_lang = "hi" if lang.startswith("hi") else "en"
+    audio_bytes = bytearray()
+    for chunk in chunks:
+        chunk_str = chunk.strip()
+        if not chunk_str:
+            continue
+        url = f"https://translate.google.com/translate_tts?ie=UTF-8&tl={target_lang}&client=tw-ob&q={urllib.parse.quote(chunk_str)}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                if resp.status == 200:
+                    audio_bytes.extend(resp.read())
+        except Exception as e:
+            logger.warning(f"TTS fetch chunk error: {e}")
+    return bytes(audio_bytes)
+
+
+@app.get("/api/tts", tags=["Voice Engine"], summary="Stream Audio Briefing Voice")
+@app.get("/tts", tags=["Voice Engine"], summary="Stream Audio Briefing Voice Alias")
+async def tts_endpoint(text: str = "", lang: str = "hi"):
+    """
+    Streams natural MP3 audio for caregiver briefings in Hindi and English.
+    Works natively across all browsers and devices without requiring OS language pack installs.
+    """
+    clean_text = text.strip()
+    if not clean_text:
+        raise HTTPException(status_code=400, detail="Empty text parameter")
+    audio_data = await asyncio.to_thread(fetch_tts_audio_sync, clean_text, lang)
+    if not audio_data:
+        raise HTTPException(status_code=502, detail="Failed to synthesize speech audio")
+    return Response(content=audio_data, media_type="audio/mpeg")
 
 # =============================================================================
 # AUTHENTICATION & PATIENT PROFILE STORE
