@@ -26,3 +26,14 @@ desktop.ini
 *.sublime-project
 *.sublime-workspace
 
+# Internal Development Docs & Scratch Notes
+docs/
+scratch/
+*.tmp
+
+# Raw Prescription Camera Test Photos
+*.jpeg
+*.jpg
+samples/*.jpeg
+samples/*.jpg
+
