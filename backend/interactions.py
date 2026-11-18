@@ -371,9 +371,10 @@ def run_safety_engine(
             "moderate": N,
             "low": N,
             "total": N,
-            "ok": bool            # True only if ZERO findings
+            "ok": bool            # True only if ZERO findings AND ZERO unmatched medicines
         },
         "unmatched": [...],       # Drugs we couldn't identify
+        "assessment_complete": bool,  # True only when all medicines are recognized
         "disclaimer": "..."       # Mandatory safety disclaimer
     }
 
@@ -406,15 +407,6 @@ def run_safety_engine(
     # ─── Sort by severity (high → moderate → low) ─────────────────────────────
     all_findings.sort(key=lambda f: SEVERITY_ORDER.get(f["severity"], 99))
 
-    # ─── Build summary counts ─────────────────────────────────────────────────
-    summary = {
-        "high": sum(1 for f in all_findings if f["severity"] == "high"),
-        "moderate": sum(1 for f in all_findings if f["severity"] == "moderate"),
-        "low": sum(1 for f in all_findings if f["severity"] == "low"),
-        "total": len(all_findings),
-        "ok": len(all_findings) == 0  # True only if absolutely no warnings
-    }
-
     # ─── Separate matched and unmatched medicines ─────────────────────────────
     # Unmatched drugs are flagged as [INFO] "Not Checked" — never green "Safe"
     medicines = []
@@ -435,12 +427,22 @@ def run_safety_engine(
                 "status": "Not Checked — drug not recognized in our database"
             })
 
+    # ─── Build summary counts (after unmatched is populated) ──────────────────
+    summary = {
+        "high": sum(1 for f in all_findings if f["severity"] == "high"),
+        "moderate": sum(1 for f in all_findings if f["severity"] == "moderate"),
+        "low": sum(1 for f in all_findings if f["severity"] == "low"),
+        "total": len(all_findings),
+        "ok": len(all_findings) == 0 and len(unmatched) == 0  # True only if no warnings and no unmatched medicines
+    }
+
     # ─── Assemble final report ────────────────────────────────────────────────
     report = {
         "medicines": medicines,
         "unmatched": unmatched,
         "findings": all_findings,
         "summary": summary,
+        "assessment_complete": len(unmatched) == 0,  # True only when all medicines are recognized
         "patient_age": patient_age if patient_age else None,
         "disclaimer": (
             "MedGuard provides decision support only. These findings are "
@@ -457,3 +459,4 @@ def run_safety_engine(
     )
 
     return report
+

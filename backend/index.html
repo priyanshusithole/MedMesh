@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -878,7 +878,21 @@
             </div>
           </div>
 
-          <!-- Unmatched / Unverified Medications Card -->
+                    <!-- Incomplete Assessment Warning (shows alongside findings when unmatched medicines exist) -->
+          <div id="incomplete-assessment-card" class="hidden bg-amber-50 rounded-xl p-6 border border-amber-200 shadow-sm">
+            <div class="flex items-start space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i data-lucide="alert-circle" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-amber-900">Incomplete Assessment</h3>
+                <p class="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                  <span class="font-bold incomplete-assessment-count">0</span> medicine(s) could not be identified in clinical databases and were not checked for safety. No conclusion can be made about the complete prescription.
+                </p>
+              </div>
+            </div>
+          </div>
+<!-- Unmatched / Unverified Medications Card -->
           <div id="unmatched-card" class="hidden bg-white rounded-xl p-6 border border-neutral-200 shadow-card">
             <div class="flex items-center space-x-2 text-status-info mb-3">
               <i data-lucide="help-circle" class="w-4 h-4"></i>
@@ -1834,6 +1848,10 @@
       const heroTitle = document.getElementById("hero-status-title");
       const heroDesc = document.getElementById("hero-status-desc");
 
+      // Determine if assessment is complete (all medicines recognized)
+      const unmatchedCount = (report.unmatched || []).length;
+      const hasUnmatched = unmatchedCount > 0;
+      
       if (avoidFindings.length > 0) {
         heroCard.className = "rounded-xl p-6 border bg-status-danger-bg border-status-danger-border transition-custom";
         heroIconWrap.className = "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-100 text-status-danger";
@@ -1852,15 +1870,26 @@
         heroTitle.textContent = "Duplicate Medicines Detected (Same Active Salt)";
         heroTitle.className = "text-lg font-bold text-amber-950 mt-1";
         heroDesc.textContent = "Multiple brands containing the exact same chemical substance were identified.";
+      } else if (hasUnmatched) {
+        // Incomplete assessment: some medicines could not be verified
+        heroCard.className = "rounded-xl p-6 border bg-status-warning-bg border-status-warning-border transition-custom";
+        heroIconWrap.className = "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-100 text-status-warning";
+        heroIcon.setAttribute("data-lucide", "alert-circle");
+        heroBadge.className = "px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900";
+        heroBadge.textContent = "Incomplete Assessment";
+        heroTitle.textContent = "Assessment Incomplete - Some Medicines Could Not Be Identified";
+        heroTitle.className = "text-lg font-bold text-amber-950 mt-1";
+        heroDesc.textContent = `${unmatchedCount} medicine(s) could not be identified in clinical databases and were not checked for safety. No conclusion can be made about the complete prescription.`;
       } else {
+        // Complete assessment with no findings
         heroCard.className = "rounded-xl p-6 border bg-status-success-bg border-status-success-border transition-custom";
         heroIconWrap.className = "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-100 text-status-success";
         heroIcon.setAttribute("data-lucide", "check-circle");
         heroBadge.className = "px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-200 text-emerald-900";
-        heroBadge.textContent = "Everything Is Fine";
-        heroTitle.textContent = "Everything Is Fine  -  No Conflicts Found";
+        heroBadge.textContent = "No Known Conflicts";
+        heroTitle.textContent = "No Known Conflicts Found - Assessment Complete";
         heroTitle.className = "text-lg font-bold text-emerald-950 mt-1";
-        heroDesc.textContent = "Prescription verified safe. No pairwise interactions, duplicate ingredients, or allergy clashes found.";
+        heroDesc.textContent = "No pairwise interactions, duplicate ingredients, or allergy clashes found by the configured checks. This is informational, not medical safety verification.";
       }
 
       // Display 1: Medicines to Avoid
@@ -1943,6 +1972,16 @@
         `;
         fineContainer.appendChild(item);
       });
+
+      // Incomplete Assessment Warning (shows alongside any findings when unmatched medicines exist)
+      const incompleteAssessmentCard = document.getElementById("incomplete-assessment-card");
+      if (hasUnmatched) {
+        incompleteAssessmentCard.classList.remove("hidden");
+        // Update the count in the warning
+        incompleteAssessmentCard.querySelector(".incomplete-assessment-count").textContent = unmatchedCount;
+      } else {
+        incompleteAssessmentCard.classList.add("hidden");
+      }
 
       // Unmatched Items
       const unmatchedCard = document.getElementById("unmatched-card");
@@ -2179,24 +2218,24 @@
 
       // Female: 0-10: Beta, 40-59: Aunty, 60+: Dadi
       if (isFemale) {
-        if (age !== null && age <= 10) return lang === 'hi' ? "बेटा" : "Beta";
-        if (age !== null && age >= 60) return lang === 'hi' ? "दादी जी" : "Dadi ji";
-        if (age !== null && age >= 40) return lang === 'hi' ? "आंटी" : "Aunty";
-        return lang === 'hi' ? "दीदी" : "Didi";
+        if (age !== null && age <= 10) return lang === 'hi' ? "à¤¬à¥‡à¤Ÿà¤¾" : "Beta";
+        if (age !== null && age >= 60) return lang === 'hi' ? "à¤¦à¤¾à¤¦à¥€ à¤œà¥€" : "Dadi ji";
+        if (age !== null && age >= 40) return lang === 'hi' ? "à¤†à¤‚à¤Ÿà¥€" : "Aunty";
+        return lang === 'hi' ? "à¤¦à¥€à¤¦à¥€" : "Didi";
       }
 
       // Male: 0-10: Beta, 11-39: Bhaiya, 40-59: Uncle, 60+: Dadaji
       if (isMale) {
-        if (age !== null && age <= 10) return lang === 'hi' ? "बेटा" : "Beta";
-        if (age !== null && age >= 60) return lang === 'hi' ? "दादाजी" : "Dadaji";
-        if (age !== null && age >= 40) return lang === 'hi' ? "अंकल" : "Uncle";
-        return lang === 'hi' ? "भैया" : "Bhaiya";
+        if (age !== null && age <= 10) return lang === 'hi' ? "à¤¬à¥‡à¤Ÿà¤¾" : "Beta";
+        if (age !== null && age >= 60) return lang === 'hi' ? "à¤¦à¤¾à¤¦à¤¾à¤œà¥€" : "Dadaji";
+        if (age !== null && age >= 40) return lang === 'hi' ? "à¤…à¤‚à¤•à¤²" : "Uncle";
+        return lang === 'hi' ? "à¤­à¥ˆà¤¯à¤¾" : "Bhaiya";
       }
 
       // Unspecified
-      if (age !== null && age <= 10) return lang === 'hi' ? "बेटा" : "Beta";
-      if (age !== null && age >= 60) return lang === 'hi' ? "दादाजी" : "Dadaji";
-      if (age !== null && age >= 40) return lang === 'hi' ? "अंकल" : "Uncle";
+      if (age !== null && age <= 10) return lang === 'hi' ? "à¤¬à¥‡à¤Ÿà¤¾" : "Beta";
+      if (age !== null && age >= 60) return lang === 'hi' ? "à¤¦à¤¾à¤¦à¤¾à¤œà¥€" : "Dadaji";
+      if (age !== null && age >= 40) return lang === 'hi' ? "à¤…à¤‚à¤•à¤²" : "Uncle";
       return "";
     }
 
@@ -2208,13 +2247,13 @@
 
       let msg = "";
       if (lang === 'hi') {
-        const greeting = honorific ? `नमस्ते ${honorific}!` : "नमस्ते!";
+        const greeting = honorific ? `à¤¨à¤®à¤¸à¥à¤¤à¥‡ ${honorific}!` : "à¤¨à¤®à¤¸à¥à¤¤à¥‡!";
         if (highCount > 0) {
-          msg = `${greeting} कृपया ध्यान दें: आपकी दो दवाइयां एक साथ नहीं लेनी चाहिए, क्योंकि इससे नुकसान हो सकता है। कृपया अभी ये दवाइयां मत लीजिए, और पहले अपने डॉक्टर को दिखाइए।`;
+          msg = `${greeting} à¤•à¥ƒà¤ªà¤¯à¤¾ à¤§à¥à¤¯à¤¾à¤¨ à¤¦à¥‡à¤‚: à¤†à¤ªà¤•à¥€ à¤¦à¥‹ à¤¦à¤µà¤¾à¤‡à¤¯à¤¾à¤‚ à¤à¤• à¤¸à¤¾à¤¥ à¤¨à¤¹à¥€à¤‚ à¤²à¥‡à¤¨à¥€ à¤šà¤¾à¤¹à¤¿à¤, à¤•à¥à¤¯à¥‹à¤‚à¤•à¤¿ à¤‡à¤¸à¤¸à¥‡ à¤¨à¥à¤•à¤¸à¤¾à¤¨ à¤¹à¥‹ à¤¸à¤•à¤¤à¤¾ à¤¹à¥ˆà¥¤ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤…à¤­à¥€ à¤¯à¥‡ à¤¦à¤µà¤¾à¤‡à¤¯à¤¾à¤‚ à¤®à¤¤ à¤²à¥€à¤œà¤¿à¤, à¤”à¤° à¤ªà¤¹à¤²à¥‡ à¤…à¤ªà¤¨à¥‡ à¤¡à¥‰à¤•à¥à¤Ÿà¤° à¤•à¥‹ à¤¦à¤¿à¤–à¤¾à¤‡à¤à¥¤`;
         } else if (modCount > 0) {
-          msg = `${greeting} कृपया ध्यान दें: आपकी कुछ दवाइयां मिलती-जुलती हैं। कृपया समय पर पानी के साथ दवाइयां लें, और अगर कोई परेशानी लगे तो डॉक्टर को बताएं।`;
+          msg = `${greeting} à¤•à¥ƒà¤ªà¤¯à¤¾ à¤§à¥à¤¯à¤¾à¤¨ à¤¦à¥‡à¤‚: à¤†à¤ªà¤•à¥€ à¤•à¥à¤› à¤¦à¤µà¤¾à¤‡à¤¯à¤¾à¤‚ à¤®à¤¿à¤²à¤¤à¥€-à¤œà¥à¤²à¤¤à¥€ à¤¹à¥ˆà¤‚à¥¤ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤¸à¤®à¤¯ à¤ªà¤° à¤ªà¤¾à¤¨à¥€ à¤•à¥‡ à¤¸à¤¾à¤¥ à¤¦à¤µà¤¾à¤‡à¤¯à¤¾à¤‚ à¤²à¥‡à¤‚, à¤”à¤° à¤…à¤—à¤° à¤•à¥‹à¤ˆ à¤ªà¤°à¥‡à¤¶à¤¾à¤¨à¥€ à¤²à¤—à¥‡ à¤¤à¥‹ à¤¡à¥‰à¤•à¥à¤Ÿà¤° à¤•à¥‹ à¤¬à¤¤à¤¾à¤à¤‚à¥¤`;
         } else {
-          msg = `${greeting} बहुत अच्छी खबर है! आपकी सभी दवाइयां सुरक्षित हैं। समय पर दवाइयां लें, खूब पानी पिएं, और स्वस्थ रहें!`;
+          msg = `${greeting} à¤¬à¤¹à¥à¤¤ à¤…à¤šà¥à¤›à¥€ à¤–à¤¬à¤° à¤¹à¥ˆ! à¤†à¤ªà¤•à¥€ à¤¸à¤­à¥€ à¤¦à¤µà¤¾à¤‡à¤¯à¤¾à¤‚ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤¹à¥ˆà¤‚à¥¤ à¤¸à¤®à¤¯ à¤ªà¤° à¤¦à¤µà¤¾à¤‡à¤¯à¤¾à¤‚ à¤²à¥‡à¤‚, à¤–à¥‚à¤¬ à¤ªà¤¾à¤¨à¥€ à¤ªà¤¿à¤à¤‚, à¤”à¤° à¤¸à¥à¤µà¤¸à¥à¤¥ à¤°à¤¹à¥‡à¤‚!`;
         }
       } else {
         const greeting = honorific ? `Hello ${honorific}!` : "Hello!";
@@ -2310,3 +2349,4 @@
   </script>
 </body>
 </html>
+
